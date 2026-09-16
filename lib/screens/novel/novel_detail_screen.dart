@@ -486,10 +486,12 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Collapsible Image AppBar with Guaranteed Back Button & Options
+          // Full-bleed Cover Hero AppBar
           SliverAppBar(
-            expandedHeight: 320,
+            expandedHeight: 380,
             pinned: true,
+            stretch: true,
+            backgroundColor: const Color(0xFF0B0F19),
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(6),
@@ -503,9 +505,11 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
               onPressed: _handleBack,
             ),
             flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [StretchMode.zoomBackground],
               background: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // Full bleed cover image
                   if (novel?.coverUrl.isNotEmpty == true)
                     Image.network(
                       novel!.coverUrl,
@@ -514,18 +518,19 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                     )
                   else
                     _buildPlaceholderBg(),
-                  // Gradient overlay
+                  // Gradient overlay: transparent top → opaque bottom
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
+                          Colors.black.withOpacity(0.1),
                           Colors.transparent,
-                          Colors.black.withOpacity(0.4),
+                          Colors.black.withOpacity(0.5),
                           Theme.of(context).scaffoldBackgroundColor,
                         ],
-                        stops: const [0.2, 0.65, 1.0],
+                        stops: const [0.0, 0.3, 0.7, 1.0],
                       ),
                     ),
                   ),
@@ -830,55 +835,96 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final ch = chapters[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(
-                          color: Theme.of(context).dividerColor.withOpacity(0.12),
-                        ),
-                      ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppTheme.primary.withOpacity(0.12),
-                          child: Text(
-                            '${ch.chapterNumber}',
-                            style: const TextStyle(
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.bold,
+                    final isFirst = index == 0;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ReaderScreen(
+                              novel: novel!,
+                              chapter: ch,
+                              allChapters: chapters,
                             ),
                           ),
-                        ),
-                        title: Text(
-                          ch.title,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                        ),
-                        subtitle: Text(
-                          'เผยแพร่เมื่อ ${_formatDate(ch.createdAt)}',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isFirst
+                              ? AppTheme.primary.withOpacity(0.08)
+                              : Theme.of(context).cardTheme.color,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isFirst
+                                ? AppTheme.primary.withOpacity(0.3)
+                                : Theme.of(context).dividerColor.withOpacity(0.1),
                           ),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ReaderScreen(
-                                novel: novel!,
-                                chapter: ch,
-                                allChapters: chapters,
+                        child: Row(
+                          children: [
+                            // Episode number box
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: isFirst
+                                    ? AppTheme.primary
+                                    : AppTheme.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${ch.chapterNumber}',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: isFirst ? Colors.white : AppTheme.primary,
+                                  ),
+                                ),
                               ),
                             ),
-                          );
-                        },
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    ch.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: isFirst ? AppTheme.primary : null,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _formatDate(ch.createdAt),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.55),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.play_arrow_rounded,
+                              size: 22,
+                              color: isFirst ? AppTheme.primary : Colors.grey.withOpacity(0.5),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -888,6 +934,57 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
             ),
         ],
       ),
+      // Sticky bottom CTA
+      bottomNavigationBar: novel != null && chapters.isNotEmpty
+          ? Container(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ReaderScreen(
+                                novel: novel,
+                                chapter: chapters.first,
+                                allChapters: chapters,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                        label: const Text('อ่านตั้งแต่ต้น', style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: () => bookmarkProvider.toggleBookmark(novel),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        side: BorderSide(color: isSaved ? AppTheme.secondary : AppTheme.primary),
+                      ),
+                      child: Icon(
+                        isSaved ? Icons.bookmark_rounded : Icons.bookmark_add_outlined,
+                        color: isSaved ? AppTheme.secondary : AppTheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : null,
     );
   }
 

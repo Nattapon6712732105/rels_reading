@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../core/theme/app_theme.dart';
 import 'home/home_screen.dart';
 import 'bookmarks/bookmarks_screen.dart';
 import 'novel/create_novel_screen.dart';
@@ -22,6 +24,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
   }
 
   void _switchTab(int index) {
+    HapticFeedback.selectionClick();
     setState(() {
       _currentIndex = index;
     });
@@ -43,28 +46,30 @@ class _MainNavScreenState extends State<MainNavScreen> {
         index: _currentIndex,
         children: screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _switchTab,
-        items: const [
-          BottomNavigationBarItem(
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: _switchTab,
+        height: 68,
+        indicatorColor: AppTheme.primary.withOpacity(0.18),
+        destinations: const [
+          NavigationDestination(
             icon: Icon(Icons.explore_outlined),
-            activeIcon: Icon(Icons.explore_rounded),
+            selectedIcon: Icon(Icons.explore_rounded, color: AppTheme.primary),
             label: 'สำรวจ',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_outline_rounded),
-            activeIcon: Icon(Icons.bookmark_rounded),
+          NavigationDestination(
+            icon: Icon(Icons.collections_bookmark_outlined),
+            selectedIcon: Icon(Icons.collections_bookmark_rounded, color: AppTheme.primary),
             label: 'ชั้นหนังสือ',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.edit_note_rounded),
-            activeIcon: Icon(Icons.edit_rounded),
+          NavigationDestination(
+            icon: Icon(Icons.edit_note_outlined),
+            selectedIcon: Icon(Icons.edit_rounded, color: AppTheme.primary),
             label: 'แต่งนิยาย',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
+            selectedIcon: Icon(Icons.person_rounded, color: AppTheme.primary),
             label: 'โปรไฟล์',
           ),
         ],

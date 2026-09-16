@@ -67,6 +67,25 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF0E1526),
+        indicatorColor: primary.withOpacity(0.18),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: primary);
+          }
+          return const TextStyle(fontSize: 11, color: Color(0xFF64748B));
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: primary, size: 24);
+          }
+          return const IconThemeData(color: Color(0xFF64748B), size: 24);
+        }),
+        elevation: 8,
+        height: 68,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      ),
       textTheme: GoogleFonts.promptTextTheme(base.textTheme).apply(
         bodyColor: const Color(0xFFF1F5F9),
         displayColor: Colors.white,
@@ -142,6 +161,25 @@ class AppTheme {
         unselectedItemColor: Color(0xFF94A3B8),
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: primary.withOpacity(0.12),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: primary);
+          }
+          return const TextStyle(fontSize: 11, color: Color(0xFF94A3B8));
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: primary, size: 24);
+          }
+          return const IconThemeData(color: Color(0xFF94A3B8), size: 24);
+        }),
+        elevation: 8,
+        height: 68,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       ),
       textTheme: GoogleFonts.promptTextTheme(base.textTheme).apply(
         bodyColor: const Color(0xFF1E293B),
