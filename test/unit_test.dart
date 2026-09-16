@@ -7,6 +7,9 @@ import 'package:rels_reading/models/chapter.dart';
 import 'package:rels_reading/models/bookmark.dart';
 import 'package:rels_reading/models/comment.dart';
 import 'package:rels_reading/data/mock_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rels_reading/data/repositories/novel_repository.dart';
+import 'package:rels_reading/core/storage/local_novel_storage.dart';
 
 void main() {
   group('AppConfig Tests', () {
@@ -177,6 +180,53 @@ void main() {
       expect(json['cover_url'], storageUrl);
       final deserialized = Novel.fromJson(json);
       expect(deserialized.coverUrl, storageUrl);
+    });
+  });
+
+  group('Novel Ownership & Security Tests', () {
+    test('Non-author is prevented from deleting other users novels', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repo = NovelRepository();
+
+      // Save a novel owned by author "author-alice"
+      final aliceNovel = Novel(
+        id: 'novel-alice-1',
+        title: 'เรื่องของอลิซ',
+        description: 'ลิขสิทธิ์ของอลิซเท่านั้น',
+        authorId: 'author-alice',
+        author: AuthorInfo(id: 'author-alice', username: 'alice'),
+      );
+      await LocalNovelStorage.saveNovel(aliceNovel);
+
+      // Attempt deletion by user "hacker-bob"
+      expect(
+        () => repo.deleteNovel('novel-alice-1', requesterUserId: 'hacker-bob', requesterUsername: 'bob'),
+        throwsA(isA<Exception>()),
+      );
+
+      // Ensure novel was NOT deleted
+      final novels = await LocalNovelStorage.getNovels();
+      expect(novels.any((n) => n.id == 'novel-alice-1'), true);
+    });
+
+    test('Author can successfully delete their own novel', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repo = NovelRepository();
+
+      final aliceNovel = Novel(
+        id: 'novel-alice-2',
+        title: 'เรื่องที่สองของอลิซ',
+        authorId: 'author-alice',
+        author: AuthorInfo(id: 'author-alice', username: 'alice'),
+      );
+      await LocalNovelStorage.saveNovel(aliceNovel);
+
+      // Attempt deletion by the legitimate author
+      await repo.deleteNovel('novel-alice-2', requesterUserId: 'author-alice', requesterUsername: 'alice');
+
+      // Verify deletion succeeded
+      final novels = await LocalNovelStorage.getNovels();
+      expect(novels.any((n) => n.id == 'novel-alice-2'), false);
     });
   });
 }

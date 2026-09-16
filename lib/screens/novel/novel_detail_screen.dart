@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/novel.dart';
+import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/novel_provider.dart';
 import '../../providers/bookmark_provider.dart';
 import '../reader/reader_screen.dart';
@@ -37,12 +39,75 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     }
   }
 
+  bool _checkIsAuthor(Novel? novel, User? currentUser) {
+    if (novel == null || currentUser == null) return false;
+
+    // Direct ID match
+    if (currentUser.id.isNotEmpty) {
+      if (novel.authorId == currentUser.id) return true;
+      if (novel.author?.id == currentUser.id) return true;
+    }
+
+    // Username match
+    if (currentUser.username.isNotEmpty && novel.author?.username.isNotEmpty == true) {
+      if (currentUser.username.trim().toLowerCase() == novel.author!.username.trim().toLowerCase()) {
+        return true;
+      }
+    }
+
+    // If authorId is 'me' and user is logged in
+    if (novel.authorId == 'me' || novel.author?.id == 'me') {
+      return true;
+    }
+
+    return false;
+  }
+
+  void _showReportDialog(Novel novel) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.flag_outlined, color: AppTheme.warning),
+            SizedBox(width: 8),
+            Text('รายงานนิยาย'),
+          ],
+        ),
+        content: Text('คุณต้องการรายงานนิยายเรื่อง "${novel.title}" เกี่ยวกับการละเมิดลิขสิทธิ์หรือเนื้อหาที่ไม่เหมาะสมใช่หรือไม่? ทีมงานจะดำเนินการตรวจสอบทันที'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('ส่งรายงานให้ทีมงานตรวจสอบเรียบร้อยแล้ว ขอบคุณที่ร่วมสร้างสังคมนักอ่านที่ดี'),
+                  backgroundColor: AppTheme.success,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warning),
+            child: const Text('ส่งรายงาน'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showNovelOptionsSheet(Novel novel) {
+    final auth = context.read<AuthProvider>();
+    final currentUser = auth.user;
+    final isAuthor = _checkIsAuthor(novel, currentUser);
     final bookmarkProvider = context.read<BookmarkProvider>();
     final isSaved = bookmarkProvider.isBookmarked(novel.id);
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Theme.of(context).cardTheme.color,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -62,35 +127,63 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.edit_note_rounded, color: AppTheme.primary),
-                  title: const Text('แก้ไขข้อมูลนิยาย (ชื่อ/เรื่องย่อ/ปก)'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showEditNovelSheet(novel);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.add_circle_outline_rounded, color: AppTheme.secondary),
-                  title: const Text('แต่งตอนใหม่'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    final chapters = context.read<NovelProvider>().currentChapters;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CreateChapterScreen(
-                          novelId: novel.id,
-                          nextChapterNumber: chapters.length + 1,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isAuthor ? Icons.verified_user_rounded : Icons.menu_book_rounded,
+                        size: 16,
+                        color: isAuthor ? AppTheme.primary : Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isAuthor ? 'เมนูจัดการสำหรับนักเขียน (เจ้าของผลงาน)' : 'ตัวเลือกสำหรับนักอ่าน',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isAuthor ? AppTheme.primary : Colors.grey,
                         ),
                       ),
-                    ).then((_) {
-                      if (mounted) {
-                        context.read<NovelProvider>().loadNovelDetails(widget.novelId);
-                      }
-                    });
-                  },
+                    ],
+                  ),
                 ),
+                const Divider(),
+
+                // Author Only Options
+                if (isAuthor) ...[
+                  ListTile(
+                    leading: const Icon(Icons.edit_note_rounded, color: AppTheme.primary),
+                    title: const Text('แก้ไขข้อมูลนิยาย (ชื่อ/เรื่องย่อ/ปก)'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showEditNovelSheet(novel);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.add_circle_outline_rounded, color: AppTheme.secondary),
+                    title: const Text('แต่งตอนใหม่'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      final chapters = context.read<NovelProvider>().currentChapters;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CreateChapterScreen(
+                            novelId: novel.id,
+                            nextChapterNumber: chapters.length + 1,
+                          ),
+                        ),
+                      ).then((_) {
+                        if (mounted) {
+                          context.read<NovelProvider>().loadNovelDetails(widget.novelId);
+                        }
+                      });
+                    },
+                  ),
+                ],
+
+                // Bookmark for Everyone
                 ListTile(
                   leading: Icon(
                     isSaved ? Icons.bookmark_remove_rounded : Icons.bookmark_add_rounded,
@@ -108,15 +201,45 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                     );
                   },
                 ),
-                const Divider(height: 1),
+
+                // Share
                 ListTile(
-                  leading: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
-                  title: const Text('ลบนิยายเรื่องนี้', style: TextStyle(color: AppTheme.error)),
+                  leading: const Icon(Icons.share_outlined),
+                  title: const Text('แชร์นิยายเรื่องนี้'),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _confirmDeleteNovel(novel);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('คัดลอกลิงก์นิยายแล้ว พร้อมแชร์ให้เพื่อนๆ อ่าน'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
                   },
                 ),
+
+                // Reader Only: Report
+                if (!isAuthor)
+                  ListTile(
+                    leading: const Icon(Icons.flag_outlined, color: AppTheme.warning),
+                    title: const Text('รายงานนิยายที่ไม่เหมาะสม'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showReportDialog(novel);
+                    },
+                  ),
+
+                // Author Only: Delete Novel
+                if (isAuthor) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
+                    title: const Text('ลบนิยายเรื่องนี้', style: TextStyle(color: AppTheme.error)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _confirmDeleteNovel(novel);
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -126,6 +249,18 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   }
 
   void _showEditNovelSheet(Novel novel) {
+    final auth = context.read<AuthProvider>();
+    final currentUser = auth.user;
+    if (!_checkIsAuthor(novel, currentUser)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('คุณไม่มีสิทธิ์แก้ไขนิยายเรื่องนี้ (สงวนสิทธิ์เฉพาะเจ้าของผลงาน)'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
     final titleController = TextEditingController(text: novel.title);
     final descController = TextEditingController(text: novel.description);
     final coverController = TextEditingController(text: novel.coverUrl);
@@ -134,6 +269,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardTheme.color,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -211,6 +347,8 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                   title: newTitle,
                                   description: descController.text.trim(),
                                   coverUrl: coverController.text.trim(),
+                                  requesterUserId: currentUser?.id,
+                                  requesterUsername: currentUser?.username,
                                 );
 
                                 if (mounted) {
@@ -259,11 +397,31 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   }
 
   void _confirmDeleteNovel(Novel novel) {
+    final auth = context.read<AuthProvider>();
+    final currentUser = auth.user;
+    if (!_checkIsAuthor(novel, currentUser)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('คุณไม่มีสิทธิ์ลบนิยายของผู้อื่น (สงวนสิทธิ์เฉพาะเจ้าของผลงาน)'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ยืนยันการลบนิยาย?'),
-        content: Text('คุณแน่ใจหรือไม่ว่าต้องการลบนิยายเรื่อง "${novel.title}" ข้อมูลทั้งหมดรวมถึงตอนจะไม่สามารถกู้คืนได้'),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppTheme.error),
+            SizedBox(width: 8),
+            Text('ยืนยันการลบนิยาย?'),
+          ],
+        ),
+        content: Text(
+          'คุณกำลังจะลบนิยายเรื่อง "${novel.title}"\n\nการกระทำนี้จะลบข้อมูลและทุกตอนอย่างถาวร ไม่สามารถกู้คืนได้ และสงวนสิทธิ์เฉพาะคุณในฐานะผู้แต่งเท่านั้น',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -272,19 +430,34 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await context.read<NovelProvider>().deleteNovel(novel.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('ลบนิยายเรียบร้อยแล้ว'),
-                    backgroundColor: AppTheme.secondary,
-                  ),
+              try {
+                await context.read<NovelProvider>().deleteNovel(
+                  novel.id,
+                  requesterUserId: currentUser?.id,
+                  requesterUsername: currentUser?.username,
                 );
-                _handleBack();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('ลบนิยายของคุณเรียบร้อยแล้ว'),
+                      backgroundColor: AppTheme.secondary,
+                    ),
+                  );
+                  _handleBack();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: AppTheme.error,
+                    ),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
-            child: const Text('ลบนิยาย'),
+            child: const Text('ยืนยันลบนิยาย'),
           ),
         ],
       ),
@@ -295,10 +468,12 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   Widget build(BuildContext context) {
     final novelProvider = context.watch<NovelProvider>();
     final bookmarkProvider = context.watch<BookmarkProvider>();
+    final authProvider = context.watch<AuthProvider>();
 
     final novel = novelProvider.currentNovel;
     final chapters = novelProvider.currentChapters;
     final isLoading = novelProvider.isLoadingChapters;
+    final isAuthor = _checkIsAuthor(novel, authProvider.user);
 
     if (novel == null && isLoading) {
       return const Scaffold(
@@ -437,6 +612,32 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                           color: AppTheme.primary,
                         ),
                       ),
+                      if (isAuthor) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.edit_rounded, size: 10, color: AppTheme.primary),
+                              SizedBox(width: 3),
+                              Text(
+                                'ผลงานของคุณ',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -538,26 +739,27 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                         'รายชื่อตอน (${chapters.length})',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      TextButton.icon(
-                        onPressed: () {
-                          if (novel == null) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CreateChapterScreen(
-                                novelId: novel.id,
-                                nextChapterNumber: chapters.length + 1,
+                      if (isAuthor)
+                        TextButton.icon(
+                          onPressed: () {
+                            if (novel == null) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CreateChapterScreen(
+                                  novelId: novel.id,
+                                  nextChapterNumber: chapters.length + 1,
+                                ),
                               ),
-                            ),
-                          ).then((_) {
-                            if (mounted) {
-                              context.read<NovelProvider>().loadNovelDetails(widget.novelId);
-                            }
-                          });
-                        },
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text('แต่งตอนใหม่'),
-                      ),
+                            ).then((_) {
+                              if (mounted) {
+                                context.read<NovelProvider>().loadNovelDetails(widget.novelId);
+                              }
+                            });
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('แต่งตอนใหม่'),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -588,31 +790,39 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        'กดปุ่มด้านล่างเพื่อเริ่มเขียนตอนแรกของนิยายเรื่องนี้',
-                        style: TextStyle(fontSize: 13, color: Colors.grey.withOpacity(0.8)),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          if (novel == null) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CreateChapterScreen(
-                                novelId: novel.id,
-                                nextChapterNumber: 1,
+                      if (isAuthor) ...[
+                        Text(
+                          'กดปุ่มด้านล่างเพื่อเริ่มเขียนตอนแรกของนิยายเรื่องนี้',
+                          style: TextStyle(fontSize: 13, color: Colors.grey.withOpacity(0.8)),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            if (novel == null) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CreateChapterScreen(
+                                  novelId: novel.id,
+                                  nextChapterNumber: 1,
+                                ),
                               ),
-                            ),
-                          ).then((_) {
-                            if (mounted) {
-                              context.read<NovelProvider>().loadNovelDetails(widget.novelId);
-                            }
-                          });
-                        },
-                        icon: const Icon(Icons.edit_note_rounded),
-                        label: const Text('แต่งตอนที่ 1 ทันที'),
-                      ),
+                            ).then((_) {
+                              if (mounted) {
+                                context.read<NovelProvider>().loadNovelDetails(widget.novelId);
+                              }
+                            });
+                          },
+                          icon: const Icon(Icons.edit_note_rounded),
+                          label: const Text('แต่งตอนที่ 1 ทันที'),
+                        ),
+                      ] else ...[
+                        Text(
+                          'นิยายเรื่องนี้ยังไม่มีตอนที่เผยแพร่\nรอติดตามตอนต่อไปจากนักเขียน',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, color: Colors.grey.withOpacity(0.8)),
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import '../../config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reader_settings_provider.dart';
@@ -329,65 +328,7 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Backend Info Card
-              const Text(
-                'ข้อมูลเซิร์ฟเวอร์ Backend',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('URL Backend API', style: TextStyle(fontSize: 13)),
-                          Text(
-                            AppConfig.baseUrl,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('สถานะการเชื่อมต่อ', style: TextStyle(fontSize: 13)),
-                          Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: auth.backendOnline ? AppTheme.success : AppTheme.secondary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                auth.backendOnline ? 'เชื่อมต่อแล้ว (Online)' : 'สำรองข้อมูลจำลอง',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: auth.backendOnline ? AppTheme.success : AppTheme.secondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
-              const SizedBox(height: 24),
 
               // Reading Preferences
               const Text(

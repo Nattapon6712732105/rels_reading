@@ -216,10 +216,17 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
         finalCoverUrl = _selectedPresetUrl!;
       }
 
+      if (!mounted) return;
+
+      final auth = context.read<AuthProvider>();
+      final currentUser = auth.user;
+
       final created = await novelProvider.createNovel(
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         coverUrl: finalCoverUrl.isNotEmpty ? finalCoverUrl : null,
+        authorId: currentUser?.id,
+        authorName: currentUser?.username,
       );
 
       if (mounted) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/novel_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class CreateChapterScreen extends StatefulWidget {
   final String novelId;
@@ -81,7 +82,22 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      final auth = context.read<AuthProvider>();
+      final currentUser = auth.user;
       final novelProvider = context.read<NovelProvider>();
+      final novel = novelProvider.currentNovel;
+
+      if (novel != null && currentUser != null) {
+        final isAuthor = (novel.authorId == currentUser.id ||
+            novel.author?.id == currentUser.id ||
+            novel.authorId == 'me' ||
+            (novel.author?.username.isNotEmpty == true &&
+                novel.author!.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase()));
+        if (!isAuthor) {
+          throw Exception('คุณไม่ใช่เจ้าของผลงาน จึงไม่สามารถเพิ่มตอนในนิยายเรื่องนี้ได้');
+        }
+      }
+
       final chapterNum = int.tryParse(_numberController.text) ?? widget.nextChapterNumber;
 
       await novelProvider.saveChapter(

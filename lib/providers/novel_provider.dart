@@ -133,11 +133,15 @@ class NovelProvider extends ChangeNotifier {
     required String title,
     String? description,
     String? coverUrl,
+    String? authorId,
+    String? authorName,
   }) async {
     final newNovel = await _novelRepo.createNovel(
       title: title,
       description: description,
       coverUrl: coverUrl,
+      authorId: authorId,
+      authorName: authorName,
     );
     _novels.insert(0, newNovel);
     _applyFilter();
@@ -182,12 +186,16 @@ class NovelProvider extends ChangeNotifier {
     required String title,
     String? description,
     String? coverUrl,
+    String? requesterUserId,
+    String? requesterUsername,
   }) async {
     final updated = await _novelRepo.updateNovel(
       id: id,
       title: title,
       description: description,
       coverUrl: coverUrl,
+      requesterUserId: requesterUserId,
+      requesterUsername: requesterUsername,
     );
     final idx = _novels.indexWhere((n) => n.id == id);
     if (idx >= 0) {
@@ -201,8 +209,16 @@ class NovelProvider extends ChangeNotifier {
     return updated;
   }
 
-  Future<void> deleteNovel(String id) async {
-    await _novelRepo.deleteNovel(id);
+  Future<void> deleteNovel(
+    String id, {
+    String? requesterUserId,
+    String? requesterUsername,
+  }) async {
+    await _novelRepo.deleteNovel(
+      id,
+      requesterUserId: requesterUserId,
+      requesterUsername: requesterUsername,
+    );
     _novels.removeWhere((n) => n.id == id);
     if (_currentNovel?.id == id) {
       _currentNovel = null;

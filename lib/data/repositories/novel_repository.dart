@@ -70,7 +70,12 @@ class NovelRepository {
     required String title,
     String? description,
     String? coverUrl,
+    String? authorId,
+    String? authorName,
   }) async {
+    final effectiveAuthorId = (authorId != null && authorId.isNotEmpty) ? authorId : 'me';
+    final effectiveAuthorName = (authorName != null && authorName.isNotEmpty) ? authorName : 'ฉัน';
+
     try {
       final res = await ApiClient.dio.post(
         '/novels',
@@ -83,8 +88,14 @@ class NovelRepository {
 
       if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
         final created = Novel.fromJson(res.data['data'] as Map<String, dynamic>);
-        await LocalNovelStorage.saveNovel(created);
-        return created;
+        final finalNovel = (created.authorId.isEmpty || created.author == null)
+            ? created.copyWith(
+                authorId: effectiveAuthorId,
+                author: AuthorInfo(id: effectiveAuthorId, username: effectiveAuthorName),
+              )
+            : created;
+        await LocalNovelStorage.saveNovel(finalNovel);
+        return finalNovel;
       }
       throw Exception(res.data['message'] ?? 'สร้างนิยายไม่สำเร็จ');
     } catch (_) {
@@ -94,8 +105,8 @@ class NovelRepository {
         title: title.trim(),
         description: description?.trim() ?? '',
         coverUrl: coverUrl?.trim() ?? '',
-        authorId: 'me',
-        author: AuthorInfo(id: 'me', username: 'ฉัน'),
+        authorId: effectiveAuthorId,
+        author: AuthorInfo(id: effectiveAuthorId, username: effectiveAuthorName),
         createdAt: DateTime.now(),
         chaptersCount: 0,
       );
@@ -109,7 +120,23 @@ class NovelRepository {
     required String title,
     String? description,
     String? coverUrl,
+    String? requesterUserId,
+    String? requesterUsername,
   }) async {
+    // Validate ownership in local storage
+    final localNovels = await LocalNovelStorage.getNovels();
+    final target = localNovels.where((n) => n.id == id).firstOrNull;
+    if (target != null && requesterUserId != null) {
+      final isOwner = target.authorId == requesterUserId ||
+          target.author?.id == requesterUserId ||
+          target.authorId == 'me' ||
+          (requesterUsername != null &&
+              target.author?.username.trim().toLowerCase() == requesterUsername.trim().toLowerCase());
+      if (!isOwner) {
+        throw Exception('คุณไม่มีสิทธิ์แก้ไขนิยายเรื่องนี้ (สงวนสิทธิ์เฉพาะเจ้าของผลงาน)');
+      }
+    }
+
     Novel? updatedNovel;
     try {
       final res = await ApiClient.dio.put(
@@ -141,7 +168,25 @@ class NovelRepository {
     return updatedNovel;
   }
 
-  Future<void> deleteNovel(String id) async {
+  Future<void> deleteNovel(
+    String id, {
+    String? requesterUserId,
+    String? requesterUsername,
+  }) async {
+    // Validate ownership before deletion
+    final localNovels = await LocalNovelStorage.getNovels();
+    final target = localNovels.where((n) => n.id == id).firstOrNull;
+    if (target != null && requesterUserId != null) {
+      final isOwner = target.authorId == requesterUserId ||
+          target.author?.id == requesterUserId ||
+          target.authorId == 'me' ||
+          (requesterUsername != null &&
+              target.author?.username.trim().toLowerCase() == requesterUsername.trim().toLowerCase());
+      if (!isOwner) {
+        throw Exception('คุณไม่มีสิทธิ์ลบนิยายเรื่องนี้ (สงวนสิทธิ์เฉพาะเจ้าของผลงานเท่านั้น)');
+      }
+    }
+
     try {
       await ApiClient.dio.delete('/novels/$id');
     } catch (_) {
