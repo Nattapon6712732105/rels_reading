@@ -6,7 +6,10 @@ import '../../config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reader_settings_provider.dart';
+import '../../providers/novel_provider.dart';
+import '../../providers/bookmark_provider.dart';
 import '../auth/login_screen.dart';
+import '../auth/widgets/pdpa_consent_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -164,6 +167,10 @@ class ProfileScreen extends StatelessWidget {
                         ),
                 ),
               ),
+
+              // Reading & Authoring Stats Grid (ใช้ Grid View)
+              const SizedBox(height: 18),
+              _buildStatsGrid(context),
 
               const SizedBox(height: 24),
 
@@ -408,6 +415,14 @@ class ProfileScreen extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip_outlined, color: AppTheme.primary),
+                      title: const Text('นโยบาย PDPA และกฎหมายลิขสิทธิ์', style: TextStyle(fontSize: 14)),
+                      subtitle: const Text('ตรวจสอบสิทธิและความคุ้มครองผลงาน', style: TextStyle(fontSize: 12)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: () => PdpaConsentSheet.show(context, onAccepted: () {}),
+                    ),
                   ],
                 ),
               ),
@@ -568,7 +583,110 @@ class ProfileScreen extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildStatsGrid(BuildContext context) {
+    final bookmarks = context.watch<BookmarkProvider>().bookmarks;
+    final novels = context.watch<NovelProvider>().allNovels;
+    final myNovels = novels.where((n) => n.authorId == 'me').length;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 2.1,
+      children: [
+        _buildStatCard(
+          context,
+          icon: Icons.bookmark_added_rounded,
+          color: AppTheme.secondary,
+          title: 'ชั้นหนังสือ',
+          value: '${bookmarks.length} เรื่อง',
+        ),
+        _buildStatCard(
+          context,
+          icon: Icons.edit_note_rounded,
+          color: AppTheme.primary,
+          title: 'ผลงานที่แต่ง',
+          value: '$myNovels เรื่อง',
+        ),
+        _buildStatCard(
+          context,
+          icon: Icons.auto_stories_rounded,
+          color: const Color(0xFF06C755),
+          title: 'คลังนิยายระบบ',
+          value: '${novels.length} เรื่อง',
+        ),
+        _buildStatCard(
+          context,
+          icon: Icons.verified_user_rounded,
+          color: const Color(0xFF6366F1),
+          title: 'สถานะ PDPA',
+          value: 'ยินยอมแล้ว',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.12),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
 
 class _LineLinkDialog extends StatefulWidget {
   const _LineLinkDialog();

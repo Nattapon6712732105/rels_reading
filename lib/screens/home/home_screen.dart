@@ -6,6 +6,7 @@ import '../../providers/novel_provider.dart';
 import '../../providers/bookmark_provider.dart';
 import '../../models/novel.dart';
 import '../novel/novel_detail_screen.dart';
+import '../novel/create_novel_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -65,19 +66,48 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      // Search bar
-                      TextField(
-                        onChanged: (val) => novelProvider.search(val),
-                        decoration: InputDecoration(
-                          hintText: 'ค้นหาชื่อนิยาย, นักเขียน, เรื่องย่อ...',
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: novelProvider.searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded, size: 20),
-                                  onPressed: () => novelProvider.search(''),
-                                )
-                              : null,
-                        ),
+                      // Search bar & Filter Button Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              onChanged: (val) => novelProvider.search(val),
+                              decoration: InputDecoration(
+                                hintText: 'ค้นหาชื่อนิยาย, นักเขียน, เรื่องย่อ...',
+                                prefixIcon: const Icon(Icons.search_rounded),
+                                suffixIcon: novelProvider.searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear_rounded, size: 20),
+                                        onPressed: () => novelProvider.search(''),
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showSortFilterSheet(context, novelProvider),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardTheme.color,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Theme.of(context).dividerColor.withOpacity(0.15),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.tune_rounded,
+                                  color: AppTheme.primary,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -167,17 +197,64 @@ class HomeScreen extends StatelessWidget {
                 )
               else if (novelProvider.novels.isEmpty)
                 SliverFillRemaining(
+                  hasScrollBody: false,
                   child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off_rounded, size: 54, color: Colors.grey.withOpacity(0.5)),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'ไม่พบนิยายที่ค้นหา',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(22),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.auto_stories_rounded, size: 54, color: AppTheme.primary),
+                          ),
+                          const SizedBox(height: 18),
+                          Text(
+                            novelProvider.searchQuery.isNotEmpty
+                                ? 'ไม่พบนิยายตามคำค้นหา'
+                                : 'ยังไม่มีนิยายในระบบ',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            novelProvider.searchQuery.isNotEmpty
+                                ? 'ลองค้นหาด้วยคำอื่น หรือกดล้างการค้นหา'
+                                : 'ร่วมเป็นนักเขียนคนแรกของ Rels Reading สร้างสรรค์ผลงานของคุณได้ทันที!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          if (novelProvider.searchQuery.isNotEmpty)
+                            OutlinedButton.icon(
+                              onPressed: () => novelProvider.search(''),
+                              icon: const Icon(Icons.clear_rounded, size: 16),
+                              label: const Text('ล้างการค้นหา'),
+                            )
+                          else
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const CreateNovelScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.edit_note_rounded),
+                              label: const Text('เริ่มแต่งนิยายเรื่องแรก'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 )
@@ -387,44 +464,105 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cover with bookmark button
+          // Cover with bookmark button and chapter badge
           Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: double.infinity,
-                    child: novel.coverUrl.isNotEmpty
-                        ? Image.network(
-                            novel.coverUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildFallbackCover(),
-                          )
-                        : _buildFallbackCover(),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.14),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: () => bookmarks.toggleBookmark(novel),
+                ],
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: double.infinity,
+                      child: novel.coverUrl.isNotEmpty
+                          ? Image.network(
+                              novel.coverUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _buildFallbackCover(),
+                            )
+                          : _buildFallbackCover(),
+                    ),
+                  ),
+                  // Gradient shadow at bottom of cover
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 48,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                        size: 18,
-                        color: isSaved ? AppTheme.secondary : Colors.white,
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.75),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  // Chapter count badge (สไตล์ Web นิยาย Dek-D / ReadAWrite)
+                  Positioned(
+                    bottom: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.45),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.menu_book_rounded, size: 10, color: Colors.white70),
+                          const SizedBox(width: 3),
+                          Text(
+                            novel.chaptersCount > 0 ? '${novel.chaptersCount} ตอน' : 'รอตอนใหม่',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Bookmark toggle button
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: () => bookmarks.toggleBookmark(novel),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                          size: 16,
+                          color: isSaved ? AppTheme.secondary : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -435,18 +573,30 @@ class HomeScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              height: 1.3,
+              height: 1.25,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            novel.displayAuthorName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.65),
-            ),
+          const SizedBox(height: 3),
+          Row(
+            children: [
+              Icon(
+                Icons.edit_note_rounded,
+                size: 13,
+                color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+              ),
+              const SizedBox(width: 3),
+              Expanded(
+                child: Text(
+                  novel.displayAuthorName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -463,6 +613,126 @@ class HomeScreen extends StatelessWidget {
           color: Color(0xFF64748B),
         ),
       ),
+    );
+  }
+
+  void _showSortFilterSheet(BuildContext context, NovelProvider novelProvider) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.35),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'จัดเรียงและกรองนิยาย',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            novelProvider.setCategory('ทั้งหมด');
+                            novelProvider.setSortBy('latest');
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('รีเซ็ตทั้งหมด'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Sort By Options
+                    const Text('จัดเรียงตาม', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('ล่าสุด'),
+                          selected: novelProvider.sortBy == 'latest',
+                          onSelected: (_) {
+                            novelProvider.setSortBy('latest');
+                            setSheetState(() {});
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('จำนวนตอนมากที่สุด'),
+                          selected: novelProvider.sortBy == 'chapters',
+                          onSelected: (_) {
+                            novelProvider.setSortBy('chapters');
+                            setSheetState(() {});
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('ชื่อเรื่อง ก-ฮ'),
+                          selected: novelProvider.sortBy == 'title',
+                          onSelected: (_) {
+                            novelProvider.setSortBy('title');
+                            setSheetState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Categories
+                    const Text('หมวดหมู่', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: novelProvider.categories.map((cat) {
+                        final isSelected = novelProvider.selectedCategory == cat;
+                        return ChoiceChip(
+                          label: Text(cat),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            novelProvider.setCategory(cat);
+                            setSheetState(() {});
+                          },
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('นำไปใช้'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

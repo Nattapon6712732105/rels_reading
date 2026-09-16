@@ -13,6 +13,7 @@ class NovelProvider extends ChangeNotifier {
   bool _isLoading = false;
   String _searchQuery = '';
   String _selectedCategory = 'ทั้งหมด';
+  String _sortBy = 'latest'; // 'latest', 'chapters', 'title'
 
   // Active novel detail & chapters
   Novel? _currentNovel;
@@ -24,6 +25,7 @@ class NovelProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
+  String get sortBy => _sortBy;
   Novel? get currentNovel => _currentNovel;
   List<Chapter> get currentChapters => _currentChapters;
   bool get isLoadingChapters => _isLoadingChapters;
@@ -65,6 +67,12 @@ class NovelProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSortBy(String sort) {
+    _sortBy = sort;
+    _applyFilter();
+    notifyListeners();
+  }
+
   void _applyFilter() {
     _filteredNovels = _novels.where((novel) {
       final matchesSearch = novel.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -86,7 +94,21 @@ class NovelProvider extends ChangeNotifier {
       }
       return true;
     }).toList();
+
+    // Sort
+    if (_sortBy == 'chapters') {
+      _filteredNovels.sort((a, b) => b.chaptersCount.compareTo(a.chaptersCount));
+    } else if (_sortBy == 'title') {
+      _filteredNovels.sort((a, b) => a.title.compareTo(b.title));
+    } else {
+      _filteredNovels.sort((a, b) {
+        final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+    }
   }
+
 
   Future<void> loadNovelDetails(String novelId) async {
     _isLoadingChapters = true;
@@ -154,4 +176,39 @@ class NovelProvider extends ChangeNotifier {
       filename: filename,
     );
   }
+
+  Future<Novel> updateNovel({
+    required String id,
+    required String title,
+    String? description,
+    String? coverUrl,
+  }) async {
+    final updated = await _novelRepo.updateNovel(
+      id: id,
+      title: title,
+      description: description,
+      coverUrl: coverUrl,
+    );
+    final idx = _novels.indexWhere((n) => n.id == id);
+    if (idx >= 0) {
+      _novels[idx] = updated;
+    }
+    if (_currentNovel?.id == id) {
+      _currentNovel = updated;
+    }
+    _applyFilter();
+    notifyListeners();
+    return updated;
+  }
+
+  Future<void> deleteNovel(String id) async {
+    await _novelRepo.deleteNovel(id);
+    _novels.removeWhere((n) => n.id == id);
+    if (_currentNovel?.id == id) {
+      _currentNovel = null;
+    }
+    _applyFilter();
+    notifyListeners();
+  }
 }
+

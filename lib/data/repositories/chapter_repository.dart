@@ -1,10 +1,12 @@
-import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
+import '../../core/storage/local_novel_storage.dart';
 import '../../models/chapter.dart';
 import '../mock_data.dart';
 
 class ChapterRepository {
   Future<List<Chapter>> getChapters(String novelId) async {
+    final localChapters = await LocalNovelStorage.getChapters(novelId);
+
     try {
       final res = await ApiClient.dio.get(
         '/chapters',
@@ -13,13 +15,25 @@ class ChapterRepository {
 
       if (res.data['success'] == true && res.data['data'] is List) {
         final list = res.data['data'] as List;
-        return list.map((e) => Chapter.fromJson(e as Map<String, dynamic>)).toList();
+        final remoteChapters = list.map((e) => Chapter.fromJson(e as Map<String, dynamic>)).toList();
+
+        // Merge with local chapters
+        final Map<String, Chapter> map = {};
+        for (final c in localChapters) {
+          map['${c.chapterNumber}'] = c;
+        }
+        for (final c in remoteChapters) {
+          map['${c.chapterNumber}'] = c;
+        }
+        final merged = map.values.toList();
+        merged.sort((a, b) => a.chapterNumber.compareTo(b.chapterNumber));
+        return merged;
       }
       throw Exception(res.data['message'] ?? 'ไม่สามารถดึงข้อมูลตอนได้');
-    } on DioException catch (_) {
-      // Fallback
-      return MockData.sampleChapters[novelId] ?? [];
     } catch (_) {
+      if (localChapters.isNotEmpty) {
+        return localChapters;
+      }
       return MockData.sampleChapters[novelId] ?? [];
     }
   }
@@ -31,17 +45,17 @@ class ChapterRepository {
         return Chapter.fromJson(res.data['data'] as Map<String, dynamic>);
       }
       throw Exception(res.data['message'] ?? 'ไม่พบเนื้อหาตอน');
-    } on DioException catch (_) {
-      // Fallback search across sample chapters
+    } catch (_) {
+      // Search in sample chapters or throw
       for (final chapters in MockData.sampleChapters.values) {
         for (final ch in chapters) {
           if (ch.id == chapterId) return ch;
         }
       }
-      // Return default first chapter of novel 1
-      return MockData.sampleChapters['mock-novel-1']!.first;
-    } catch (_) {
-      return MockData.sampleChapters['mock-novel-1']!.first;
+      if (MockData.sampleChapters['mock-novel-1']?.isNotEmpty == true) {
+        return MockData.sampleChapters['mock-novel-1']!.first;
+      }
+      throw Exception('ไม่พบเนื้อหาตอน');
     }
   }
 
@@ -63,24 +77,24 @@ class ChapterRepository {
       );
 
       if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
-        return Chapter.fromJson(res.data['data'] as Map<String, dynamic>);
+        final saved = Chapter.fromJson(res.data['data'] as Map<String, dynamic>);
+        await LocalNovelStorage.saveChapter(saved);
+        return saved;
       }
       throw Exception(res.data['message'] ?? 'บันทึกตอนไม่สำเร็จ');
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 500) {
-        final newChapter = Chapter(
-          id: 'local-ch-${DateTime.now().millisecondsSinceEpoch}',
-          novelId: novelId,
-          chapterNumber: chapterNumber,
-          title: title,
-          content: content ?? '',
-          createdAt: DateTime.now(),
-        );
-        MockData.sampleChapters.putIfAbsent(novelId, () => []).add(newChapter);
-        return newChapter;
-      }
-      final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
-      throw Exception(msg);
+    } catch (_) {
+      // Offline / Error fallback: save persistently in local storage
+      final newChapter = Chapter(
+        id: 'local-ch-${DateTime.now().millisecondsSinceEpoch}',
+        novelId: novelId,
+        chapterNumber: chapterNumber,
+        title: title.trim(),
+        content: content?.trim() ?? '',
+        createdAt: DateTime.now(),
+      );
+      await LocalNovelStorage.saveChapter(newChapter);
+      MockData.sampleChapters.putIfAbsent(novelId, () => []).add(newChapter);
+      return newChapter;
     }
   }
 }

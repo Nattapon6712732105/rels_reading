@@ -38,6 +38,43 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
     super.dispose();
   }
 
+  void _handleExit() {
+    final hasContent = _titleController.text.trim().isNotEmpty ||
+        _contentController.text.trim().isNotEmpty;
+
+    if (hasContent) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppTheme.warning),
+              SizedBox(width: 8),
+              Text('ละทิ้งเนื้อหาตอนนี้?'),
+            ],
+          ),
+          content: const Text('เนื้อหาที่คุณพิมพ์ไว้จะสูญหาย คุณแน่ใจหรือไม่ว่าต้องการออก?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('แต่งต่อ'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+              child: const Text('ละทิ้งและออก'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -67,7 +104,7 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('บันทึกตอนไม่สำเร็จ: ${e.toString()}'),
+            content: Text('บันทึกตอนไม่สำเร็จ: ${e.toString().replaceAll("Exception: ", "")}'),
             backgroundColor: AppTheme.error,
           ),
         );
@@ -79,106 +116,124 @@ class _CreateChapterScreenState extends State<CreateChapterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('แต่งตอนใหม่'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: TextButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('เผยแพร่', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _handleExit();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: 'ย้อนกลับ',
+            onPressed: _handleExit,
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 90,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'ตอนที่ *',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _numberController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(hintText: '1'),
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'ใส่เลขตอน';
-                              if (int.tryParse(v) == null) return 'ตัวเลข';
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'ชื่อตอน *',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _titleController,
-                            decoration: const InputDecoration(
-                              hintText: 'เช่น จุดเริ่มต้นของการเดินทาง',
+          title: const Text('แต่งตอนใหม่'),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: TextButton(
+                onPressed: _isSubmitting ? null : _submit,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('เผยแพร่', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 90,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ตอนที่ *',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                             ),
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'กรุณาระบุชื่อตอน';
-                              return null;
-                            },
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _numberController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(hintText: '1'),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'ใส่เลขตอน';
+                                if (int.tryParse(v) == null) return 'ตัวเลข';
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'เนื้อหาประจำตอน *',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _contentController,
-                  maxLines: 18,
-                  decoration: const InputDecoration(
-                    hintText: 'พิมพ์เนื้อเรื่องนิยายของคุณที่นี่...',
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ชื่อตอน *',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _titleController,
+                              decoration: const InputDecoration(
+                                hintText: 'เช่น จุดเริ่มต้นของการเดินทาง',
+                              ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'กรุณาระบุชื่อตอน';
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'กรุณาใส่เนื้อหานิยาย';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submit,
-                  child: const Text('เผยแพร่ตอนนี้เลย'),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  const Text(
+                    'เนื้อหาประจำตอน *',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _contentController,
+                    maxLines: 18,
+                    decoration: const InputDecoration(
+                      hintText: 'พิมพ์เนื้อเรื่องนิยายของคุณที่นี่...',
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'กรุณาใส่เนื้อหานิยาย';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 28),
+                  ElevatedButton(
+                    onPressed: _isSubmitting ? null : _submit,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Text('เผยแพร่ตอนนี้เลย'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

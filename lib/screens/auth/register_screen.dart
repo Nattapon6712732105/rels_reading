@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/storage/local_novel_storage.dart';
 import '../../providers/auth_provider.dart';
 import 'login_screen.dart';
+import 'widgets/pdpa_consent_sheet.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,8 +23,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _otpSent = false;
+  bool _consentAccepted = false;
   int _countdownSeconds = 0;
   Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialConsent();
+  }
+
+  Future<void> _checkInitialConsent() async {
+    final accepted = await LocalNovelStorage.isConsentAccepted();
+    if (mounted) {
+      setState(() {
+        _consentAccepted = accepted;
+      });
+    }
+  }
+
+  Future<bool> _ensureConsent() async {
+    if (_consentAccepted) return true;
+
+    final accepted = await PdpaConsentSheet.show(
+      context,
+      onAccepted: () {
+        if (mounted) setState(() => _consentAccepted = true);
+      },
+    );
+
+    if (accepted && mounted) {
+      setState(() => _consentAccepted = true);
+      return true;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('กรุณายินยอมตามกฎหมาย PDPA และลิขสิทธิ์ก่อนลงทะเบียน'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+    }
+    return false;
+  }
+
 
   @override
   void dispose() {
@@ -90,6 +135,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
+    final consentOk = await _ensureConsent();
+    if (!consentOk || !mounted) return;
+
     if (!_formKey.currentState!.validate()) return;
 
     if (!_otpSent) {
@@ -347,7 +395,93 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
+
+                  // PDPA & Copyright Consent Checkbox
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _consentAccepted
+                          ? AppTheme.primary.withOpacity(0.06)
+                          : Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _consentAccepted
+                            ? AppTheme.primary.withOpacity(0.3)
+                            : Theme.of(context).dividerColor.withOpacity(0.25),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _consentAccepted,
+                            activeColor: AppTheme.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            onChanged: (val) async {
+                              if (val == true) {
+                                await _ensureConsent();
+                              } else {
+                                setState(() => _consentAccepted = false);
+                                await LocalNovelStorage.setConsentAccepted(false);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              const Text(
+                                'ฉันได้อ่านและยินยอมตาม ',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              GestureDetector(
+                                onTap: () => PdpaConsentSheet.show(
+                                  context,
+                                  onAccepted: () {
+                                    if (mounted) setState(() => _consentAccepted = true);
+                                  },
+                                ),
+                                child: const Text(
+                                  'นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                              const Text(' และ ', style: TextStyle(fontSize: 12)),
+                              GestureDetector(
+                                onTap: () => PdpaConsentSheet.show(
+                                  context,
+                                  onAccepted: () {
+                                    if (mounted) setState(() => _consentAccepted = true);
+                                  },
+                                ),
+                                child: const Text(
+                                  'ข้อกำหนดลิขสิทธิ์เนื้อหา',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
 
                   ElevatedButton(
                     onPressed: auth.isLoading ? null : _handleRegister,

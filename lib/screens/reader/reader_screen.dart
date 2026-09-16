@@ -124,6 +124,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
           ],
         ),
         actions: [
+          // Table of Contents Button (Chapter Selector Bottom Sheet)
+          IconButton(
+            icon: const Icon(Icons.format_list_bulleted_rounded),
+            tooltip: 'สารบัญตอน',
+            onPressed: _showChapterSelectorSheet,
+          ),
           // Comments Button
           IconButton(
             icon: const Icon(Icons.chat_bubble_outline_rounded),
@@ -571,6 +577,181 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             ),
                           ],
                         ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showChapterSelectorSheet() {
+    final settings = context.read<ReaderSettingsProvider>();
+    final allChapters = widget.allChapters;
+    final searchController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setSheetState) {
+            final query = searchController.text.trim().toLowerCase();
+            final filtered = query.isEmpty
+                ? allChapters
+                : allChapters.where((c) {
+                    return c.title.toLowerCase().contains(query) ||
+                        c.chapterNumber.toString().contains(query);
+                  }).toList();
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              builder: (sheetCtx, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: settings.backgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 20,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: settings.textColor.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'สารบัญตอน (${allChapters.length})',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: settings.textColor,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.close_rounded, color: settings.textColor),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: TextField(
+                          controller: searchController,
+                          onChanged: (_) => setSheetState(() {}),
+                          style: TextStyle(color: settings.textColor),
+                          decoration: InputDecoration(
+                            hintText: 'ค้นหาเลขตอน หรือชื่อตอน...',
+                            prefixIcon: Icon(Icons.search_rounded, color: settings.textColor.withOpacity(0.6)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: settings.textColor.withOpacity(0.2)),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'ไม่พบตอนที่ค้นหา',
+                                  style: TextStyle(color: settings.textColor.withOpacity(0.7)),
+                                ),
+                              )
+                            : ListView.builder(
+                                controller: scrollController,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                itemCount: filtered.length,
+                                itemBuilder: (context, index) {
+                                  final ch = filtered[index];
+                                  final isCurrent = ch.id == _currentChapter.id;
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: isCurrent
+                                          ? AppTheme.primary.withOpacity(0.15)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isCurrent
+                                            ? AppTheme.primary
+                                            : settings.textColor.withOpacity(0.1),
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: isCurrent
+                                            ? AppTheme.primary
+                                            : settings.textColor.withOpacity(0.1),
+                                        child: Text(
+                                          '${ch.chapterNumber}',
+                                          style: TextStyle(
+                                            color: isCurrent ? Colors.white : settings.textColor,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      title: Text(
+                                        ch.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isCurrent ? AppTheme.primary : settings.textColor,
+                                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      trailing: isCurrent
+                                          ? Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.primary,
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: const Text(
+                                                'กำลังอ่าน',
+                                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                              ),
+                                            )
+                                          : Icon(Icons.arrow_forward_ios_rounded, size: 12, color: settings.textColor.withOpacity(0.4)),
+                                      onTap: () {
+                                        Navigator.pop(ctx);
+                                        _goToChapter(ch);
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),

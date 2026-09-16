@@ -5,36 +5,47 @@ import 'novel/create_novel_screen.dart';
 import 'profile/profile_screen.dart';
 
 class MainNavScreen extends StatefulWidget {
-  const MainNavScreen({super.key});
+  final int initialIndex;
+  const MainNavScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavScreen> createState() => _MainNavScreenState();
 }
 
 class _MainNavScreenState extends State<MainNavScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    BookmarksScreen(),
-    CreateNovelScreen(),
-    ProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
+
+  void _switchTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      const HomeScreen(),
+      const BookmarksScreen(),
+      CreateNovelScreen(
+        onCancel: () => _switchTab(0),
+      ),
+      const ProfileScreen(),
+    ];
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _switchTab,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.explore_outlined),
