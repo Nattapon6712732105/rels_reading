@@ -15,18 +15,6 @@ class HomeScreen extends StatelessWidget {
     final novelProvider = context.watch<NovelProvider>();
     final authProvider = context.watch<AuthProvider>();
 
-    final width = MediaQuery.of(context).size.width;
-    final int crossAxisCount;
-    if (width < 600) {
-      crossAxisCount = 2;
-    } else if (width < 900) {
-      crossAxisCount = 3;
-    } else if (width < 1200) {
-      crossAxisCount = 4;
-    } else {
-      crossAxisCount = 5;
-    }
-
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -197,11 +185,11 @@ class HomeScreen extends StatelessWidget {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: 0.64,
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 175,
+                      mainAxisExtent: 275,
                       crossAxisSpacing: 16,
-                      mainAxisSpacing: 18,
+                      mainAxisSpacing: 20,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
