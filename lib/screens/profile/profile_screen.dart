@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import '../../config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
@@ -483,90 +485,10 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _showLinkLineDialog(BuildContext context) {
-    final auth = context.read<AuthProvider>();
-    final lineIdController = TextEditingController(text: auth.lineUserId ?? '');
-
     showDialog(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Row(
-            children: const [
-              Icon(Icons.link_rounded, color: Color(0xFF06C755), size: 24),
-              SizedBox(width: 8),
-              Text('ผูกบัญชี LINE', style: TextStyle(fontSize: 18)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'กรอก LINE User ID ของคุณ (ขึ้นต้นด้วย U ตามด้วยตัวเลขและตัวอักษร) เพื่อรับข้อความแจ้งเตือน Flex Message เมื่อมีตอนใหม่',
-                style: TextStyle(fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: lineIdController,
-                decoration: const InputDecoration(
-                  labelText: 'LINE User ID',
-                  hintText: 'Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: () {
-                  lineIdController.text = 'U${DateTime.now().millisecondsSinceEpoch}sample';
-                },
-                icon: const Icon(Icons.auto_fix_high_rounded, size: 16),
-                label: const Text('ใส่ ID จำลองสำหรับการทดสอบ', style: TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('ยกเลิก'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF06C755),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                final id = lineIdController.text.trim();
-                if (id.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('กรุณากรอก LINE User ID')),
-                  );
-                  return;
-                }
-                Navigator.pop(ctx);
-                final ok = await auth.linkLineAccount(id);
-                if (context.mounted) {
-                  if (ok) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('ผูกบัญชี LINE สำเร็จแล้ว! พร้อมรับการแจ้งเตือนตอนใหม่'),
-                        backgroundColor: AppTheme.success,
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(auth.errorMessage ?? 'ผูกบัญชี LINE ไม่สำเร็จ'),
-                        backgroundColor: AppTheme.error,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('ยืนยันผูกบัญชี'),
-            ),
-          ],
-        );
-      },
+      barrierDismissible: false,
+      builder: (ctx) => const _LineLinkDialog(),
     );
   }
 
@@ -628,10 +550,10 @@ class ProfileScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: const [
               Text(
-                '1. แอดเพื่อน LINE Official Account (@rels_reading)\n'
-                '2. ดู LINE User ID ของคุณ หรือใช้ Rich Menu ในห้องแชท\n'
-                '3. นำ LINE User ID มาผูกในหน้านี้\n'
-                '4. เมื่อนักเขียนลงตอนใหม่ของนิยายที่คุณ Bookmark ไว้ ระบบจะส่งการ์ด Flex Message แจ้งเตือนเข้าแชท LINE ของคุณทันที!',
+                '1. แอดเพื่อน LINE Official Account (@855szpwc) ด้วย QR Code\n'
+                '2. กดปุ่ม "ผูกบัญชี LINE" แล้วนำรหัส 6 หลักที่ระบบสร้างให้ ส่งเข้าไปในห้องแชท LINE\n'
+                '3. ระบบจะทำการตรวจสอบและผูกบัญชีกับ LINE ของคุณทันทีโดยอัตโนมัติ!\n'
+                '4. เมื่อนักเขียนอัปเดตตอนใหม่ของนิยายที่คุณ Bookmark ไว้ ระบบจะส่งการ์ด Flex Message แจ้งเตือนเข้าแชท LINE ทันที',
                 style: TextStyle(fontSize: 13, height: 1.6),
               ),
             ],
@@ -647,3 +569,457 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+
+class _LineLinkDialog extends StatefulWidget {
+  const _LineLinkDialog();
+
+  @override
+  State<_LineLinkDialog> createState() => _LineLinkDialogState();
+}
+
+class _LineLinkDialogState extends State<_LineLinkDialog> {
+  bool _isLoading = true;
+  String? _errorMessage;
+  String? _linkCode;
+  String? _qrCodeUrl;
+  String? _addFriendUrl;
+  String? _botBasicId;
+  bool _isChecking = false;
+  bool _showManualInput = false;
+  final _manualIdController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLinkData();
+  }
+
+  @override
+  void dispose() {
+    _manualIdController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchLinkData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final auth = context.read<AuthProvider>();
+      final oaInfo = await auth.getLineOaInfo();
+      final codeRes = await auth.createLineLinkCode();
+
+      if (mounted) {
+        setState(() {
+          _botBasicId = oaInfo['botBasicId'] ?? '@855szpwc';
+          _addFriendUrl = oaInfo['addFriendUrl'] ?? 'https://line.me/R/ti/p/@855szpwc';
+          _qrCodeUrl = oaInfo['qrCodeUrl'] ??
+              'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://line.me/R/ti/p/@855szpwc';
+          _linkCode = codeRes['code'] as String?;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _checkStatus() async {
+    setState(() => _isChecking = true);
+    final auth = context.read<AuthProvider>();
+    await auth.fetchLineStatus();
+
+    if (!mounted) return;
+    setState(() => _isChecking = false);
+
+    if (auth.isLineLinked) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎉 ผูกบัญชี LINE สำเร็จแล้ว! พร้อมรับการแจ้งเตือนตอนใหม่'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ยังไม่พบข้อความยืนยันจาก LINE กรุณาส่งรหัส 6 หลักในแชทก่อน แล้วกดตรวจอีกครั้ง'),
+          backgroundColor: AppTheme.warning,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openLineApp() async {
+    final url = _addFriendUrl ?? 'https://line.me/R/ti/p/@855szpwc';
+    try {
+      final canLaunch = await canLaunchUrlString(url);
+      if (canLaunch) {
+        await launchUrlString(url, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrlString(url);
+      }
+    } catch (_) {
+      await launchUrlString(url);
+    }
+  }
+
+  Future<void> _copyLinkCode() async {
+    if (_linkCode == null) return;
+    await Clipboard.setData(ClipboardData(text: _linkCode!));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('คัดลอกรหัส $_linkCode เรียบร้อยแล้ว! นำไปส่งในแชท LINE ได้เลย'),
+          backgroundColor: const Color(0xFF06C755),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _submitManualId() async {
+    final manualId = _manualIdController.text.trim();
+    if (manualId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอก LINE User ID')),
+      );
+      return;
+    }
+
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.linkLineAccount(manualId);
+    if (!mounted) return;
+
+    if (ok) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ผูกบัญชี LINE สำเร็จเรียบร้อยแล้ว'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'ผูกบัญชี LINE ไม่สำเร็จ'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF06C755).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF06C755), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ผูกบัญชี LINE Official',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'เพื่อรับการแจ้งเตือนตอนใหม่ผ่านแชท',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    splashRadius: 20,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(color: Color(0xFF06C755)),
+                        SizedBox(height: 16),
+                        Text('กำลังเตรียม QR Code และรหัสเชื่อมต่อ...', style: TextStyle(fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                )
+              else if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: AppTheme.error, size: 40),
+                      const SizedBox(height: 12),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13, color: AppTheme.error),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _fetchLinkData,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text('ลองใหม่อีกครั้ง'),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                // Step 1: Add Friend via QR Code
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF06C755),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('ขั้นตอนที่ 1', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'สแกน QR เพิ่มเพื่อน LINE',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+
+                      // QR Code Container
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            _qrCodeUrl!,
+                            width: 160,
+                            height: 160,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 160,
+                              height: 160,
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      ElevatedButton.icon(
+                        onPressed: _openLineApp,
+                        icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                        label: Text('เปิดแอป LINE เพื่อเพิ่มเพื่อน (${_botBasicId ?? "@855szpwc"})'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF06C755),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Step 2: Send 6-digit link code
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('ขั้นตอนที่ 2', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'ส่งรหัสนี้ในห้องแชท LINE',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Code Display Card
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF06C755).withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF06C755).withOpacity(0.35)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _linkCode ?? '------',
+                              style: const TextStyle(
+                                fontSize: 30,
+                                letterSpacing: 6,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF06C755),
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            IconButton(
+                              onPressed: _copyLinkCode,
+                              icon: const Icon(Icons.copy_rounded, color: Color(0xFF06C755)),
+                              tooltip: 'คัดลอกรหัส',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.timer_outlined, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          const Text('รหัสมีอายุ 15 นาที', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: _fetchLinkData,
+                            child: const Text(
+                              'สร้างรหัสใหม่',
+                              style: TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                // Check Status Action Button
+                ElevatedButton.icon(
+                  onPressed: _isChecking ? null : _checkStatus,
+                  icon: _isChecking
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.verified_outlined, size: 18),
+                  label: const Text(
+                    'ตรวจสอบสถานะการผูกบัญชี',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // Manual ID Accordion Fallback
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() => _showManualInput = !_showManualInput);
+                    },
+                    child: Text(
+                      _showManualInput ? 'ซ่อนการระบุ ID ด้วยตนเอง' : 'หรือระบุ LINE User ID ด้วยตนเอง',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                ),
+
+                if (_showManualInput) ...[
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _manualIdController,
+                    decoration: InputDecoration(
+                      labelText: 'LINE User ID (ขึ้นต้นด้วย U)',
+                      hintText: 'Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                      isDense: true,
+                      suffixIcon: IconButton(
+                        onPressed: _submitManualId,
+                        icon: const Icon(Icons.send_rounded, size: 18),
+                        tooltip: 'ผูกบัญชี',
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

@@ -144,4 +144,14 @@ class NovelProvider extends ChangeNotifier {
     }
     return chapter;
   }
+
+  Future<String> uploadCoverImage({
+    required Uint8List imageBytes,
+    required String filename,
+  }) async {
+    return await _novelRepo.uploadCoverImage(
+      imageBytes: imageBytes,
+      filename: filename,
+    );
+  }
 }

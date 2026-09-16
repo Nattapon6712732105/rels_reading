@@ -17,16 +17,19 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await novelProvider.fetchNovels();
-          },
-          child: CustomScrollView(
-            slivers: [
-              // App Bar & Search
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await novelProvider.fetchNovels();
+              },
+              child: CustomScrollView(
+                slivers: [
+                  // App Bar & Search
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -182,11 +185,11 @@ class HomeScreen extends StatelessWidget {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.62,
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 175,
+                      mainAxisExtent: 275,
                       crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      mainAxisSpacing: 20,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -203,7 +206,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    )));
   }
 
   Widget _buildStatusChip(BuildContext context, AuthProvider auth, NovelProvider novels) {
