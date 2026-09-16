@@ -24,7 +24,35 @@ class AuthRepository {
     }
   }
 
-  Future<User> register(String email, String username, String password) async {
+  /// Request a 6-digit OTP sent to the user's email for registration
+  Future<String> sendOtp(String email) async {
+    try {
+      final res = await ApiClient.dio.post(
+        '/auth/send-otp',
+        data: {
+          'email': email.trim(),
+        },
+      );
+
+      if (res.data['success'] == true) {
+        return res.data['message'] as String? ?? 'ส่งรหัส OTP สำเร็จแล้ว';
+      }
+      throw Exception(res.data['message'] ?? 'ส่งรหัส OTP ไม่สำเร็จ');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        throw Exception('อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบแทน');
+      }
+      if (e.response?.statusCode == 500) {
+        throw Exception('เซิร์ฟเวอร์บน Vercel ยังไม่ได้ใส่ SMTP_PASS ใน Environment Variables (กรุณานำรหัสผ่าน 16 หลักไปใส่ใน Vercel Dashboard แล้ว Redeploy)');
+      }
+      final serverMsg = e.response?.data?['message'];
+      final msg = serverMsg ?? e.message ?? 'เกิดข้อผิดพลาดในการส่งรหัส OTP';
+      throw Exception(msg);
+    }
+  }
+
+  /// Register a new account with email, username, password and the verified 6-digit OTP
+  Future<User> register(String email, String username, String password, String otp) async {
     try {
       final res = await ApiClient.dio.post(
         '/auth/register',
@@ -32,6 +60,7 @@ class AuthRepository {
           'email': email.trim(),
           'username': username.trim(),
           'password': password,
+          'otp': otp.trim(),
         },
       );
 
@@ -41,6 +70,26 @@ class AuthRepository {
       throw Exception(res.data['message'] ?? 'ลงทะเบียนไม่สำเร็จ');
     } on DioException catch (e) {
       final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+      throw Exception(msg);
+    }
+  }
+
+  /// Sign in with Google ID token credential
+  Future<AuthResponse> loginWithGoogle(String credential) async {
+    try {
+      final res = await ApiClient.dio.post(
+        '/auth/google',
+        data: {
+          'credential': credential.trim(),
+        },
+      );
+
+      if (res.data['success'] == true) {
+        return AuthResponse.fromJson(res.data['data'] as Map<String, dynamic>);
+      }
+      throw Exception(res.data['message'] ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ');
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการเชื่อมต่อ Google';
       throw Exception(msg);
     }
   }
@@ -71,6 +120,49 @@ class AuthRepository {
       throw Exception(res.data['message'] ?? 'แก้ไขโปรไฟล์ไม่สำเร็จ');
     } on DioException catch (e) {
       final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+      throw Exception(msg);
+    }
+  }
+
+  /// Check LINE Account Linking Status
+  Future<Map<String, dynamic>> getLineStatus() async {
+    try {
+      final res = await ApiClient.dio.get('/line/status');
+      if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
+        return res.data['data'] as Map<String, dynamic>;
+      }
+      return {'isLinked': false, 'lineUserId': null};
+    } on DioException catch (_) {
+      return {'isLinked': false, 'lineUserId': null};
+    } catch (_) {
+      return {'isLinked': false, 'lineUserId': null};
+    }
+  }
+
+  /// Link LINE User ID to current user account
+  Future<bool> linkLine(String lineUserId) async {
+    try {
+      final res = await ApiClient.dio.post(
+        '/line/link',
+        data: {'lineUserId': lineUserId.trim()},
+      );
+      if (res.data['success'] == true) {
+        return true;
+      }
+      throw Exception(res.data['message'] ?? 'ผูกบัญชี LINE ไม่สำเร็จ');
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการผูกบัญชี LINE';
+      throw Exception(msg);
+    }
+  }
+
+  /// Unlink LINE Account from current user account
+  Future<bool> unlinkLine() async {
+    try {
+      final res = await ApiClient.dio.post('/line/unlink');
+      return res.data['success'] == true;
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message ?? 'ยกเลิกการผูกบัญชี LINE ไม่สำเร็จ';
       throw Exception(msg);
     }
   }

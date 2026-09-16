@@ -44,6 +44,170 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _handleGoogleLogin() {
+    final emailController = TextEditingController();
+    final nameController = TextEditingController();
+    final tokenController = TextEditingController();
+    bool useRawToken = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                    ),
+                    child: const Text(
+                      'G',
+                      style: TextStyle(
+                        color: Color(0xFF4285F4),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        fontFamily: 'Roboto',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text('เข้าสู่ระบบด้วย Google', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      useRawToken
+                          ? 'วาง Google OAuth ID Token (Credential) จาก Google SDK'
+                          : 'ระบุบัญชี Google ของคุณเพื่อเข้าใช้งานระบบ Rels Reading',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (!useRawToken) ...[
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'อีเมล Google (@gmail.com)',
+                          hintText: 'example@gmail.com',
+                          prefixIcon: Icon(Icons.mail_outline_rounded),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'ชื่อของคุณ (ไม่บังคับ)',
+                          hintText: 'ชื่อผู้ใช้สำหรับแสดงในแอป',
+                          prefixIcon: Icon(Icons.person_outline_rounded),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ] else ...[
+                      TextField(
+                        controller: tokenController,
+                        decoration: const InputDecoration(
+                          labelText: 'Google ID Token / Credential',
+                          hintText: 'วาง Google ID Token ที่นี่...',
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 3,
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setDialogState(() {
+                              useRawToken = !useRawToken;
+                            });
+                          },
+                          child: Text(
+                            useRawToken ? 'สลับไปกรอกอีเมล Google' : 'สลับไปใช้วิธีวาง ID Token',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('ยกเลิก'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4285F4),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    String credentialToSend;
+                    if (useRawToken) {
+                      credentialToSend = tokenController.text.trim();
+                      if (credentialToSend.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('กรุณาระบุ Google ID Token')),
+                        );
+                        return;
+                      }
+                    } else {
+                      final email = emailController.text.trim();
+                      if (email.isEmpty || !email.contains('@')) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('กรุณากรอกอีเมล Google ที่ถูกต้อง')),
+                        );
+                        return;
+                      }
+                      credentialToSend = email;
+                    }
+
+                    Navigator.pop(ctx);
+                    final auth = context.read<AuthProvider>();
+                    final ok = await auth.loginWithGoogle(credentialToSend);
+                    if (ok && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ ${auth.user?.username ?? ""}'),
+                          backgroundColor: AppTheme.success,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    } else if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(auth.errorMessage ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ'),
+                          backgroundColor: AppTheme.error,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('เข้าสู่ระบบด้วย Google'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _handleDemoLogin() async {
     final auth = context.read<AuthProvider>();
     await auth.useDemoAccount();
@@ -118,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: BoxDecoration(
                         color: AppTheme.error.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
+                        border: Border.all(color: AppTheme.error.withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
@@ -188,6 +352,53 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Text('เข้าสู่ระบบ'),
                   ),
                   const SizedBox(height: 16),
+
+                  // Divider
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'หรือเข้าสู่ระบบด้วย',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Google Sign In Button
+                  OutlinedButton.icon(
+                    onPressed: auth.isLoading ? null : _handleGoogleLogin,
+                    icon: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'G',
+                        style: TextStyle(
+                          color: Color(0xFF4285F4),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                    ),
+                    label: const Text('เข้าสู่ระบบด้วย Google'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      side: BorderSide(color: Theme.of(context).dividerColor),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
                   // Demo User Button
                   OutlinedButton.icon(

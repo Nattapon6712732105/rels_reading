@@ -10,14 +10,24 @@ class AuthProvider extends ChangeNotifier {
 
   User? _user;
   bool _isLoading = true;
+  bool _isSendingOtp = false;
   String? _errorMessage;
+  String? _otpSuccessMessage;
   bool _backendOnline = false;
+
+  // LINE Official Account state
+  bool _isLineLinked = false;
+  String? _lineUserId;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
+  bool get isSendingOtp => _isSendingOtp;
   String? get errorMessage => _errorMessage;
+  String? get otpSuccessMessage => _otpSuccessMessage;
   bool get isLoggedIn => _user != null;
   bool get backendOnline => _backendOnline;
+  bool get isLineLinked => _isLineLinked || (_user?.isLineLinked ?? false);
+  String? get lineUserId => _lineUserId ?? _user?.lineUserId;
 
   Future<void> init() async {
     _isLoading = true;
@@ -41,10 +51,19 @@ class AuthProvider extends ChangeNotifier {
       try {
         final profile = await _repo.getProfile();
         _user = profile;
+        _isLineLinked = profile.isLineLinked;
+        _lineUserId = profile.lineUserId;
         await TokenStorage.saveUser(profile);
       } catch (_) {
         // If offline or profile fetch fails, keep cached user
+        if (_user != null) {
+          _isLineLinked = _user!.isLineLinked;
+          _lineUserId = _user!.lineUserId;
+        }
       }
+
+      // Refresh LINE status
+      await fetchLineStatus();
     }
 
     _isLoading = false;
@@ -63,7 +82,12 @@ class AuthProvider extends ChangeNotifier {
         refreshToken: res.tokens.refreshToken,
       );
       _user = res.user;
+      _isLineLinked = res.user.isLineLinked;
+      _lineUserId = res.user.lineUserId;
       await TokenStorage.saveUser(res.user);
+
+      await fetchLineStatus();
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -75,16 +99,134 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> register(String email, String username, String password) async {
+  /// Request 6-digit OTP to be sent to the email
+  Future<bool> sendOtp(String email) async {
+    _isSendingOtp = true;
+    _errorMessage = null;
+    _otpSuccessMessage = null;
+    notifyListeners();
+
+    try {
+      final msg = await _repo.sendOtp(email);
+      _otpSuccessMessage = msg;
+      _isSendingOtp = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isSendingOtp = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Register new user with Email, Username, Password, and 6-digit OTP
+  Future<bool> register(String email, String username, String password, String otp) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await _repo.register(email, username, password);
+      await _repo.register(email, username, password, otp);
       // Automatically login after register
       final success = await login(email, password);
       return success;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Login with Google Credential
+  Future<bool> loginWithGoogle(String credential) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _repo.loginWithGoogle(credential);
+      await TokenStorage.saveTokens(
+        accessToken: res.tokens.accessToken,
+        refreshToken: res.tokens.refreshToken,
+      );
+      _user = res.user;
+      _isLineLinked = res.user.isLineLinked;
+      _lineUserId = res.user.lineUserId;
+      await TokenStorage.saveUser(res.user);
+
+      await fetchLineStatus();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Fetch LINE linking status from backend
+  Future<void> fetchLineStatus() async {
+    try {
+      final status = await _repo.getLineStatus();
+      _isLineLinked = status['isLinked'] == true;
+      _lineUserId = status['lineUserId'] as String?;
+      notifyListeners();
+    } catch (_) {
+      // Keep previous status
+    }
+  }
+
+  /// Link LINE User ID to current user account
+  Future<bool> linkLineAccount(String lineUserId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final ok = await _repo.linkLine(lineUserId);
+      if (ok) {
+        _isLineLinked = true;
+        _lineUserId = lineUserId;
+        if (_user != null) {
+          _user = _user!.copyWith(lineUserId: lineUserId);
+          await TokenStorage.saveUser(_user!);
+        }
+      }
+      _isLoading = false;
+      notifyListeners();
+      return ok;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Unlink LINE Account
+  Future<bool> unlinkLineAccount() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final ok = await _repo.unlinkLine();
+      if (ok) {
+        _isLineLinked = false;
+        _lineUserId = null;
+        if (_user != null) {
+          _user = _user!.copyWith(lineUserId: '');
+          await TokenStorage.saveUser(_user!);
+        }
+      }
+      _isLoading = false;
+      notifyListeners();
+      return ok;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       _isLoading = false;
@@ -125,6 +267,10 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     await TokenStorage.clear();
     _user = null;
+    _isLineLinked = false;
+    _lineUserId = null;
+    _errorMessage = null;
+    _otpSuccessMessage = null;
     notifyListeners();
   }
 }
