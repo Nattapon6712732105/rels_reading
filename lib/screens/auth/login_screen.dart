@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/google_sign_in_button/google_sign_in_button.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 
@@ -18,9 +20,60 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _authEventsSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      _authEventsSubscription = GoogleSignIn.instance.authenticationEvents.listen(
+        (event) async {
+          if (event is GoogleSignInAuthenticationEventSignIn) {
+            final account = event.user;
+            final idToken = account.authentication.idToken;
+            final credential = (idToken != null && idToken.isNotEmpty) ? idToken : account.email;
+
+            if (!mounted) return;
+            final auth = context.read<AuthProvider>();
+            final ok = await auth.loginWithGoogle(credential);
+
+            if (ok && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ ${auth.user?.username ?? ""}'),
+                  backgroundColor: AppTheme.success,
+                ),
+              );
+              Navigator.pop(context);
+            } else if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(auth.errorMessage ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ'),
+                  backgroundColor: AppTheme.error,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          }
+        },
+        onError: (err) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ Google: $err'),
+                backgroundColor: AppTheme.error,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+        },
+      );
+    }
+  }
 
   @override
   void dispose() {
+    _authEventsSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -46,53 +99,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleGoogleLogin() async {
-    if (kIsWeb) {
-      try {
-        final account = await GoogleSignIn.instance.authenticate();
-        final idToken = account.authentication.idToken;
-        final credential = (idToken != null && idToken.isNotEmpty) ? idToken : account.email;
-
-        if (!mounted) return;
-        final auth = context.read<AuthProvider>();
-        final ok = await auth.loginWithGoogle(credential);
-
-        if (ok && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ ${auth.user?.username ?? ""}'),
-              backgroundColor: AppTheme.success,
-            ),
-          );
-          Navigator.pop(context);
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(auth.errorMessage ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ'),
-              backgroundColor: AppTheme.error,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      } catch (e) {
-        if (e is GoogleSignInException && e.code == GoogleSignInExceptionCode.canceled) {
-          // User closed the Google account picker dialog
-          return;
-        }
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ Google: $e'),
-            backgroundColor: AppTheme.error,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-      return;
-    }
-
-    _showManualGoogleLoginDialog();
-  }
 
   void _showManualGoogleLoginDialog() {
     final emailController = TextEditingController();
@@ -423,30 +429,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
 
                   // Google Sign In Button
-                  OutlinedButton.icon(
-                    onPressed: auth.isLoading ? null : _handleGoogleLogin,
-                    icon: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'G',
-                        style: TextStyle(
-                          color: Color(0xFF4285F4),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                          fontFamily: 'Roboto',
-                        ),
-                      ),
-                    ),
-                    label: const Text('เข้าสู่ระบบด้วย Google'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      side: BorderSide(color: Theme.of(context).dividerColor),
-                    ),
+                  buildGoogleSignInButton(
+                    onNonWebPressed: _showManualGoogleLoginDialog,
+                    isLoading: auth.isLoading,
                   ),
                   const SizedBox(height: 12),
 
