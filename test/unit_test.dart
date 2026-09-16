@@ -17,12 +17,16 @@ void main() {
   });
 
   group('Model Serialization Tests', () {
-    test('User fromJson and toJson', () {
+    test('User fromJson and toJson with LINE and Google auth', () {
       final json = {
         'id': 'user-123',
         'email': 'test@example.com',
         'username': 'tester',
         'role': 'user',
+        'auth_provider': 'google',
+        'google_id': 'g-123456',
+        'line_user_id': 'U1234567890abcdef',
+        'avatar_url': 'https://example.com/avatar.jpg',
         'created_at': '2026-09-14T10:00:00.000Z',
       };
       final user = User.fromJson(json);
@@ -30,8 +34,23 @@ void main() {
       expect(user.email, 'test@example.com');
       expect(user.username, 'tester');
       expect(user.role, 'user');
+      expect(user.authProvider, 'google');
+      expect(user.googleId, 'g-123456');
+      expect(user.lineUserId, 'U1234567890abcdef');
+      expect(user.avatarUrl, 'https://example.com/avatar.jpg');
+      expect(user.isLineLinked, true);
+      expect(user.isGoogleAuth, true);
       expect(user.isAdmin, false);
-      expect(user.toJson()['email'], 'test@example.com');
+
+      final userJson = user.toJson();
+      expect(userJson['email'], 'test@example.com');
+      expect(userJson['auth_provider'], 'google');
+      expect(userJson['line_user_id'], 'U1234567890abcdef');
+      expect(userJson['google_id'], 'g-123456');
+
+      final copied = user.copyWith(lineUserId: '', authProvider: 'local');
+      expect(copied.isLineLinked, false);
+      expect(copied.isGoogleAuth, false);
     });
 
     test('AuthResponse fromJson', () {

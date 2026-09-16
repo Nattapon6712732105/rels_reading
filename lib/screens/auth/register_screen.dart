@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -16,24 +17,108 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _otpController = TextEditingController();
+
   bool _obscurePassword = true;
+  bool _otpSent = false;
+  int _countdownSeconds = 0;
+  Timer? _countdownTimer;
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _otpController.dispose();
     super.dispose();
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    setState(() {
+      _countdownSeconds = 60;
+    });
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_countdownSeconds > 0) {
+        setState(() {
+          _countdownSeconds--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _handleSendOtp() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('กรุณาระบุอีเมลที่ถูกต้องก่อนขอรหัส OTP'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
+
+    final auth = context.read<AuthProvider>();
+    final success = await auth.sendOtp(email);
+
+    if (mounted) {
+      if (success) {
+        setState(() {
+          _otpSent = true;
+        });
+        _startCountdown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.otpSuccessMessage ?? 'ส่งรหัส OTP 6 หลักไปยังอีเมลแล้ว'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage ?? 'ขอรหัส OTP ไม่สำเร็จ'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_otpSent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('กรุณากด "ขอรับรหัส OTP" เพื่อยืนยันอีเมลก่อนลงทะเบียน'),
+          backgroundColor: AppTheme.secondary,
+        ),
+      );
+      return;
+    }
+
+    final otp = _otpController.text.trim();
+    if (otp.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('กรุณากรอกรหัส OTP ให้ครบ 6 หลัก'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+      return;
+    }
 
     final auth = context.read<AuthProvider>();
     final success = await auth.register(
       _emailController.text.trim(),
       _usernameController.text.trim(),
       _passwordController.text,
+      otp,
     );
 
     if (success && mounted) {
@@ -79,7 +164,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   const Text(
                     'สร้างบัญชีใหม่',
                     textAlign: TextAlign.center,
@@ -88,16 +173,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
-                    'เข้าร่วมคอมมูนิตี้นักอ่านและนักเขียนนิยาย',
+                    'ยืนยันตัวตนด้วย Email OTP เพื่อความปลอดภัยของบัญชีคุณ',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
                   if (auth.errorMessage != null)
                     Container(
@@ -106,7 +191,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       decoration: BoxDecoration(
                         color: AppTheme.error.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
+                        border: Border.all(color: AppTheme.error.withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
@@ -137,19 +222,104 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Email
+                  // Email with Send OTP Button
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'อีเมล',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      suffixIcon: Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: TextButton.icon(
+                          onPressed: auth.isSendingOtp || _countdownSeconds > 0 ? null : _handleSendOtp,
+                          icon: auth.isSendingOtp
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  _otpSent ? Icons.refresh_rounded : Icons.send_rounded,
+                                  size: 16,
+                                ),
+                          label: Text(
+                            _countdownSeconds > 0
+                                ? 'รอ (${_countdownSeconds}s)'
+                                : (_otpSent ? 'ขอใหม่อีกครั้ง' : 'ขอรหัส OTP'),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
                     ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'กรุณาระบุอีเมล';
                       if (!v.contains('@')) return 'รูปแบบอีเมลไม่ถูกต้อง';
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // OTP Field Section
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: _otpSent ? const EdgeInsets.all(16) : EdgeInsets.zero,
+                    decoration: _otpSent
+                        ? BoxDecoration(
+                            color: AppTheme.primary.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppTheme.primary.withOpacity(0.25)),
+                          )
+                        : null,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_otpSent) ...[
+                          Row(
+                            children: [
+                              const Icon(Icons.mark_email_read_outlined, size: 18, color: AppTheme.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'ส่งรหัส OTP 6 หลักไปที่ ${_emailController.text.trim()}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        TextFormField(
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            letterSpacing: 6,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'รหัส OTP 6 หลัก',
+                            hintText: '000000',
+                            prefixIcon: const Icon(Icons.vpn_key_outlined),
+                            counterText: '',
+                            filled: _otpSent,
+                            fillColor: Theme.of(context).cardColor,
+                          ),
+                          validator: (v) {
+                            if (!_otpSent) return null;
+                            if (v == null || v.trim().isEmpty) return 'กรุณากรอกรหัส OTP 6 หลัก';
+                            if (v.trim().length != 6) return 'รหัส OTP ต้องมี 6 หลัก';
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -187,7 +357,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             width: 22,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
-                        : const Text('ลงทะเบียน'),
+                        : const Text('ลงทะเบียนและเข้าสู่ระบบ'),
                   ),
                   const SizedBox(height: 24),
 
