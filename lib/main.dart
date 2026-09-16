@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'config/app_config.dart';
 import 'core/api/api_client.dart';
@@ -14,6 +16,16 @@ void main() async {
 
   // Initialize Dio API client and token interceptors
   ApiClient.init();
+
+  if (kIsWeb) {
+    try {
+      await GoogleSignIn.instance.initialize(
+        clientId: AppConfig.googleClientId,
+      );
+    } catch (e) {
+      debugPrint('Google Sign-In web initialization error: $e');
+    }
+  }
 
   runApp(const MyApp());
 }

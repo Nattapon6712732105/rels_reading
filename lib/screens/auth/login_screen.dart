@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
@@ -44,7 +46,55 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _handleGoogleLogin() {
+  Future<void> _handleGoogleLogin() async {
+    if (kIsWeb) {
+      try {
+        final account = await GoogleSignIn.instance.authenticate();
+        final idToken = account.authentication.idToken;
+        final credential = (idToken != null && idToken.isNotEmpty) ? idToken : account.email;
+
+        if (!mounted) return;
+        final auth = context.read<AuthProvider>();
+        final ok = await auth.loginWithGoogle(credential);
+
+        if (ok && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ ${auth.user?.username ?? ""}'),
+              backgroundColor: AppTheme.success,
+            ),
+          );
+          Navigator.pop(context);
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.errorMessage ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ'),
+              backgroundColor: AppTheme.error,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        if (e is GoogleSignInException && e.code == GoogleSignInExceptionCode.canceled) {
+          // User closed the Google account picker dialog
+          return;
+        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ Google: $e'),
+            backgroundColor: AppTheme.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
+    _showManualGoogleLoginDialog();
+  }
+
+  void _showManualGoogleLoginDialog() {
     final emailController = TextEditingController();
     final nameController = TextEditingController();
     final tokenController = TextEditingController();
