@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/novel.dart';
 import '../../models/chapter.dart';
+import '../../models/bookmark.dart';
 
 class LocalNovelStorage {
   static const String _keyNovels = 'local_saved_novels';
   static const String _keyChaptersPrefix = 'local_chapters_';
   static const String _keyPdpaConsent = 'pdpa_copyright_consent_accepted';
+  static const String _keyBookmarks = 'local_saved_bookmarks';
 
   // --- PDPA & Copyright Consent ---
   static Future<bool> isConsentAccepted() async {
@@ -101,4 +103,41 @@ class LocalNovelStorage {
       await prefs.setString(_keyNovels, encodedNovels);
     }
   }
+
+  // --- Bookmark CRUD in Local Storage ---
+  static Future<List<Bookmark>> getBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(_keyBookmarks);
+    if (jsonStr == null || jsonStr.trim().isEmpty) return [];
+
+    try {
+      final list = jsonDecode(jsonStr) as List;
+      return list.map((e) => Bookmark.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> saveBookmark(Bookmark bookmark) async {
+    final prefs = await SharedPreferences.getInstance();
+    final bookmarks = await getBookmarks();
+    bookmarks.removeWhere((b) => b.novelId == bookmark.novelId);
+    bookmarks.insert(0, bookmark);
+    final encoded = jsonEncode(bookmarks.map((b) => b.toJson()).toList());
+    await prefs.setString(_keyBookmarks, encoded);
+  }
+
+  static Future<void> removeBookmark(String novelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final bookmarks = await getBookmarks();
+    bookmarks.removeWhere((b) => b.novelId == novelId);
+    final encoded = jsonEncode(bookmarks.map((b) => b.toJson()).toList());
+    await prefs.setString(_keyBookmarks, encoded);
+  }
+
+  static Future<void> clearAllBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyBookmarks);
+  }
 }
+

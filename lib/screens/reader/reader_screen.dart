@@ -8,8 +8,10 @@ import '../../providers/reader_settings_provider.dart';
 import '../../providers/novel_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../data/repositories/comment_repository.dart';
+import '../auth/login_screen.dart';
 
 class ReaderScreen extends StatefulWidget {
+
   final Novel novel;
   final Chapter chapter;
   final List<Chapter> allChapters;
@@ -91,6 +93,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<ReaderSettingsProvider>();
+    final auth = context.watch<AuthProvider>();
+    final isLockedForGuest = !auth.isLoggedIn && _currentChapter.chapterNumber > 5;
 
     return Scaffold(
       backgroundColor: settings.backgroundColor,
@@ -171,18 +175,22 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     ),
                     const Divider(height: 32),
 
-                    // Chapter Text
-                    SelectableText(
-                      _chapterContent.isNotEmpty
-                          ? _chapterContent.trim()
-                          : 'ไม่มีเนื้อหาในตอนนี้',
-                      style: TextStyle(
-                        fontSize: settings.fontSize,
-                        color: settings.textColor,
-                        height: settings.lineHeight,
-                        letterSpacing: 0.2,
+                    // Chapter Text OR Guest Paywall Lock
+                    if (isLockedForGuest)
+                      _buildGuestPaywall(context, settings)
+                    else
+                      SelectableText(
+                        _chapterContent.isNotEmpty
+                            ? _chapterContent.trim()
+                            : 'ไม่มีเนื้อหาในตอนนี้',
+                        style: TextStyle(
+                          fontSize: settings.fontSize,
+                          color: settings.textColor,
+                          height: settings.lineHeight,
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
+
 
                     const SizedBox(height: 48),
                     const Divider(height: 32),
@@ -763,4 +771,115 @@ class _ReaderScreenState extends State<ReaderScreen> {
       },
     );
   }
+
+  Widget _buildGuestPaywall(BuildContext context, ReaderSettingsProvider settings) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: settings.backgroundColor == AppTheme.readerDarkBg
+            ? const Color(0xFF1E293B)
+            : Colors.amber.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.amber.withOpacity(0.4),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.18),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lock_person_rounded,
+              size: 44,
+              color: Colors.amber,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'จำกัดการอ่านฟรีสำหรับผู้เยี่ยมชม (สูงสุด 5 ตอนแรก)',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.amber,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'เข้าสู่ระบบเพื่ออ่านตอนที่ ${_currentChapter.chapterNumber} ฟรี!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: settings.textColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'แพลตฟอร์ม Rels Reading เปิดให้ผู้เยี่ยมชมทดลองอ่านฟรี 5 ตอนแรก สมัครสมาชิกหรือเข้าสู่ระบบฟรีได้ในไม่กี่วินาที เพื่อปลดล็อกการอ่านตอนต่อไปได้ไม่อั้น และเก็บบันทึกประวัติการอ่าน',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: settings.textColor.withOpacity(0.75),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+              icon: const Icon(Icons.login_rounded),
+              label: const Text(
+                'เข้าสู่ระบบ / สมัครสมาชิกฟรี',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 3,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: _showChapterSelectorSheet,
+            icon: const Icon(Icons.format_list_bulleted_rounded, size: 16),
+            label: const Text('เลือกอ่านตอนอื่นที่เปิดฟรี (ตอนที่ 1 - 5)'),
+            style: TextButton.styleFrom(
+              foregroundColor: settings.textColor.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

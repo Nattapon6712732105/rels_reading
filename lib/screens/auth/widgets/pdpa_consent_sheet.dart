@@ -24,8 +24,8 @@ class PdpaConsentSheet extends StatefulWidget {
 class _PdpaConsentSheetState extends State<PdpaConsentSheet>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _pdpaChecked = true;
-  bool _copyrightChecked = true;
+  bool _pdpaChecked = false;
+  bool _copyrightChecked = false;
 
   @override
   void initState() {

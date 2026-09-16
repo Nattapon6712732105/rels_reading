@@ -9,6 +9,7 @@ import 'package:rels_reading/models/comment.dart';
 import 'package:rels_reading/data/mock_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rels_reading/data/repositories/novel_repository.dart';
+import 'package:rels_reading/data/repositories/bookmark_repository.dart';
 import 'package:rels_reading/core/storage/local_novel_storage.dart';
 
 void main() {
@@ -228,6 +229,64 @@ void main() {
       final novels = await LocalNovelStorage.getNovels();
       expect(novels.any((n) => n.id == 'novel-alice-2'), false);
     });
+
+    test('Non-author is prevented from updating other users novels', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repo = NovelRepository();
+
+      final aliceNovel = Novel(
+        id: 'novel-alice-3',
+        title: 'เรื่องดั้งเดิมของอลิซ',
+        authorId: 'author-alice',
+        author: AuthorInfo(id: 'author-alice', username: 'alice'),
+      );
+      await LocalNovelStorage.saveNovel(aliceNovel);
+
+      expect(
+        () => repo.updateNovel(
+          id: 'novel-alice-3',
+          title: 'ชื่อใหม่โดยแฮกเกอร์',
+          requesterUserId: 'attacker',
+          requesterUsername: 'attacker_user',
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+  });
+
+  group('Tags and Consent Tests', () {
+    test('Novel tags serialize and deserialize correctly', () {
+      final novel = Novel(
+        id: 'novel-tags-1',
+        title: 'นิยายแฟนตาซีสุดมันส์',
+        authorId: 'author-test',
+        tags: ['#แฟนตาซี', '#ระบบ', '#เกิดใหม่'],
+      );
+      final json = novel.toJson();
+      expect(json['tags'], ['#แฟนตาซี', '#ระบบ', '#เกิดใหม่']);
+
+      final restored = Novel.fromJson(json);
+      expect(restored.tags, contains('#แฟนตาซี'));
+      expect(restored.tags, contains('#ระบบ'));
+      expect(restored.tags, contains('#เกิดใหม่'));
+      expect(restored.tags.length, 3);
+    });
+
+    test('PDPA Consent default is false and reflects accepted status', () async {
+      SharedPreferences.setMockInitialValues({});
+      expect(await LocalNovelStorage.isConsentAccepted(), false);
+
+      await LocalNovelStorage.setConsentAccepted(true);
+      expect(await LocalNovelStorage.isConsentAccepted(), true);
+    });
+
+    test('BookmarkRepository does not inject mock data when empty', () async {
+      SharedPreferences.setMockInitialValues({});
+      final bookmarkRepo = BookmarkRepository();
+      final bookmarks = await bookmarkRepo.getBookmarks();
+      expect(bookmarks.isEmpty, true);
+    });
   });
 }
+
 

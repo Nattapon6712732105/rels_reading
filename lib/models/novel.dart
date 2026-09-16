@@ -36,6 +36,7 @@ class Novel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final int chaptersCount;
+  final List<String> tags;
 
   Novel({
     required this.id,
@@ -47,12 +48,18 @@ class Novel {
     this.createdAt,
     this.updatedAt,
     this.chaptersCount = 0,
+    this.tags = const [],
   });
 
   factory Novel.fromJson(Map<String, dynamic> json) {
     AuthorInfo? author;
     if (json['author'] != null && json['author'] is Map<String, dynamic>) {
       author = AuthorInfo.fromJson(json['author'] as Map<String, dynamic>);
+    }
+
+    List<String> parsedTags = [];
+    if (json['tags'] != null && json['tags'] is List) {
+      parsedTags = (json['tags'] as List).map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
     }
 
     return Novel(
@@ -65,6 +72,7 @@ class Novel {
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'].toString()) : null,
       chaptersCount: json['chapters_count'] as int? ?? 0,
+      tags: parsedTags,
     );
   }
 
@@ -78,6 +86,8 @@ class Novel {
       if (author != null) 'author': author!.toJson(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'chapters_count': chaptersCount,
+      'tags': tags,
     };
   }
 
@@ -93,6 +103,7 @@ class Novel {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? chaptersCount,
+    List<String>? tags,
   }) {
     return Novel(
       id: id ?? this.id,
@@ -104,6 +115,8 @@ class Novel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       chaptersCount: chaptersCount ?? this.chaptersCount,
+      tags: tags ?? this.tags,
     );
   }
 }
+

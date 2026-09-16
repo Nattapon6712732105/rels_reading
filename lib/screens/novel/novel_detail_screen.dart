@@ -55,13 +55,9 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
       }
     }
 
-    // If authorId is 'me' and user is logged in
-    if (novel.authorId == 'me' || novel.author?.id == 'me') {
-      return true;
-    }
-
     return false;
   }
+
 
   void _showReportDialog(Novel novel) {
     showDialog(
@@ -351,7 +347,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                   requesterUsername: currentUser?.username,
                                 );
 
-                                if (mounted) {
+                                if (mounted && ctx.mounted) {
                                   Navigator.pop(ctx);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -666,9 +662,35 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                       ),
                     ],
                   ),
+                  if (novel?.tags.isNotEmpty == true) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: novel!.tags.map((tag) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.primary.withOpacity(0.25)),
+                          ),
+                          child: Text(
+                            tag.startsWith('#') ? tag : '#$tag',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                   const SizedBox(height: 20),
 
                   // Action Buttons Row
+
                   Row(
                     children: [
                       Expanded(
@@ -746,9 +768,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                       ),
                       if (isAuthor)
                         TextButton.icon(
-                          onPressed: () {
+                          onPressed: () async {
                             if (novel == null) return;
-                            Navigator.push(
+                            final novelProv = context.read<NovelProvider>();
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CreateChapterScreen(
@@ -756,11 +779,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                   nextChapterNumber: chapters.length + 1,
                                 ),
                               ),
-                            ).then((_) {
-                              if (mounted) {
-                                context.read<NovelProvider>().loadNovelDetails(widget.novelId);
-                              }
-                            });
+                            );
+                            if (mounted) {
+                              novelProv.loadNovelDetails(widget.novelId);
+                            }
                           },
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('แต่งตอนใหม่'),
@@ -802,9 +824,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
-                          onPressed: () {
+                          onPressed: () async {
                             if (novel == null) return;
-                            Navigator.push(
+                            final novelProv = context.read<NovelProvider>();
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CreateChapterScreen(
@@ -812,11 +835,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                   nextChapterNumber: 1,
                                 ),
                               ),
-                            ).then((_) {
-                              if (mounted) {
-                                context.read<NovelProvider>().loadNovelDetails(widget.novelId);
-                              }
-                            });
+                            );
+                            if (mounted) {
+                              novelProv.loadNovelDetails(widget.novelId);
+                            }
                           },
                           icon: const Icon(Icons.edit_note_rounded),
                           label: const Text('แต่งตอนที่ 1 ทันที'),
@@ -918,15 +940,41 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                 ],
                               ),
                             ),
-                            Icon(
-                              Icons.play_arrow_rounded,
-                              size: 22,
-                              color: isFirst ? AppTheme.primary : Colors.grey.withOpacity(0.5),
-                            ),
+                            if (!authProvider.isLoggedIn && ch.chapterNumber > 5)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.amber.withOpacity(0.35)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.lock_outline_rounded, size: 12, color: Colors.amber),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'สมาชิก',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.amber,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.play_arrow_rounded,
+                                size: 22,
+                                color: isFirst ? AppTheme.primary : Colors.grey.withOpacity(0.5),
+                              ),
                           ],
                         ),
                       ),
                     );
+
                   },
                   childCount: chapters.length,
                 ),

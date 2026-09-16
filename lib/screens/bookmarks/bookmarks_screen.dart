@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/novel.dart';
 import '../../providers/bookmark_provider.dart';
 import '../novel/novel_detail_screen.dart';
+import '../main_nav_screen.dart';
 
 class BookmarksScreen extends StatefulWidget {
   const BookmarksScreen({super.key});
@@ -17,6 +18,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   String _sortBy = 'latest'; // 'latest', 'title'
 
   void _showShelfOptionsSheet(BuildContext context) {
+    final bookmarkProvider = context.read<BookmarkProvider>();
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -42,7 +45,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                   ),
                 ),
                 const Text(
-                  'จัดเรียงชั้นหนังสือ',
+                  'จัดเรียงและจัดการชั้นหนังสือ',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
@@ -68,11 +71,54 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     Navigator.pop(ctx);
                   },
                 ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.delete_sweep_rounded, color: AppTheme.error),
+                  title: const Text('ล้างชั้นหนังสือทั้งหมด', style: TextStyle(color: AppTheme.error)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmClearAllBookmarks(context, bookmarkProvider);
+                  },
+                ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  void _confirmClearAllBookmarks(BuildContext context, BookmarkProvider bookmarkProvider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('ล้างชั้นหนังสือ?'),
+        content: const Text('คุณต้องการนำนิยายทั้งหมดออกจากชั้นหนังสือใช่หรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final list = List.of(bookmarkProvider.bookmarks);
+              for (final b in list) {
+                if (b.novel != null) {
+                  await bookmarkProvider.toggleBookmark(b.novel!);
+                }
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('นำนิยายออกจากชั้นหนังสือทั้งหมดแล้ว')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+            child: const Text('ล้างทั้งหมด'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -146,6 +192,23 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                             height: 1.4,
                           ),
                         ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const MainNavScreen(initialIndex: 0)),
+                            );
+                          },
+                          icon: const Icon(Icons.explore_outlined, size: 18),
+                          label: const Text('สำรวจและค้นหานิยาย'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -154,6 +217,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                   onRefresh: () async {
                     await bookmarkProvider.fetchBookmarks();
                   },
+
                   child: _isGridView
                       ? _buildGridView(context, bookmarkProvider, bookmarks)
                       : _buildListView(context, bookmarkProvider, bookmarks),

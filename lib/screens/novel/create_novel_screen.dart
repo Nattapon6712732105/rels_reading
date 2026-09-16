@@ -23,6 +23,16 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final _coverUrlController = TextEditingController();
+  final _customTagController = TextEditingController();
+  final List<String> _selectedTags = [];
+
+  final List<String> _popularTags = [
+    '#กำลังภายใน', '#แฟนตาซี', '#รักโรแมนติก', '#เกิดใหม่', '#ต่างโลก',
+    '#ระบบ', '#พระเอกเก่ง', '#ฮาเร็ม', '#ต่อสู้', '#ชีวิตประจำวัน',
+    '#ไซไฟ', '#ย้อนเวลา', '#สืบสวน', '#ดราม่า', '#คอมเมดี้',
+    '#แก้แค้น', '#เวทมนตร์', '#ดันเจี้ยน', '#เทพเซียน', '#อบอุ่นหัวใจ',
+    '#โรงเรียน', '#วาย', '#นิยายแปล', '#เอาชีวิตรอด',
+  ];
 
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
@@ -63,8 +73,10 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
     _titleController.dispose();
     _descController.dispose();
     _coverUrlController.dispose();
+    _customTagController.dispose();
     super.dispose();
   }
+
 
   void _handleExit(BuildContext context) {
     final hasContent = _titleController.text.trim().isNotEmpty ||
@@ -112,6 +124,8 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
     _titleController.clear();
     _descController.clear();
     _coverUrlController.clear();
+    _selectedTags.clear();
+    _customTagController.clear();
     _clearSelectedImage();
 
     if (widget.onCancel != null) {
@@ -126,7 +140,24 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
     }
   }
 
+  void _addCustomTag() {
+    String text = _customTagController.text.trim();
+    if (text.isEmpty) return;
+    if (!text.startsWith('#')) {
+      text = '#$text';
+    }
+    if (!_selectedTags.contains(text)) {
+      setState(() {
+        _selectedTags.add(text);
+        _customTagController.clear();
+      });
+    } else {
+      _customTagController.clear();
+    }
+  }
+
   Future<void> _pickImage() async {
+
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
@@ -227,6 +258,7 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
         coverUrl: finalCoverUrl.isNotEmpty ? finalCoverUrl : null,
         authorId: currentUser?.id,
         authorName: currentUser?.username,
+        tags: List.of(_selectedTags),
       );
 
       if (mounted) {
@@ -241,7 +273,10 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
         _titleController.clear();
         _descController.clear();
         _coverUrlController.clear();
+        _selectedTags.clear();
+        _customTagController.clear();
         _clearSelectedImage();
+
 
         // Safely push to novel detail without destroying main nav
         Navigator.push(
@@ -533,11 +568,139 @@ class _CreateNovelScreenState extends State<CreateNovelScreen> {
                         ),
                       ),
 
+                      const SizedBox(height: 24),
+
+                      // Hashtag Section
+                      Row(
+                        children: [
+                          const Icon(Icons.tag_rounded, size: 20, color: AppTheme.primary),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'แฮชแท็กนิยาย (#)',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${_selectedTags.length} แท็กที่เลือก',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'เลือกแฮชแท็กยอดนิยม หรือพิมพ์เพิ่มเอง เพื่อช่วยให้นักอ่านค้นพบนิยายของคุณได้ง่ายขึ้น',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Popular hashtag chips
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _popularTags.map((tag) {
+                          final isSelected = _selectedTags.contains(tag);
+                          return FilterChip(
+                            label: Text(tag),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  if (!_selectedTags.contains(tag)) _selectedTags.add(tag);
+                                } else {
+                                  _selectedTags.remove(tag);
+                                }
+                              });
+                            },
+                            selectedColor: AppTheme.primary,
+                            checkmarkColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : null,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                            backgroundColor: Theme.of(context).cardTheme.color,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppTheme.primary
+                                    : Theme.of(context).dividerColor.withOpacity(0.3),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Custom hashtag input
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _customTagController,
+                              decoration: const InputDecoration(
+                                hintText: 'พิมพ์ # เพิ่มเติม เช่น #พระเอกเย็นชา #ชวนฟิน',
+                                prefixIcon: Icon(Icons.add_rounded, size: 18),
+                                isDense: true,
+                              ),
+                              onFieldSubmitted: (val) => _addCustomTag(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _addCustomTag,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('เพิ่ม #'),
+                          ),
+                        ],
+                      ),
+                      if (_selectedTags.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _selectedTags.map((tag) {
+                            return Chip(
+                              label: Text(tag, style: const TextStyle(fontSize: 11, color: Colors.white)),
+                              backgroundColor: AppTheme.primary,
+                              deleteIcon: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                              onDeleted: () {
+                                setState(() {
+                                  _selectedTags.remove(tag);
+                                });
+                              },
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+
                       const SizedBox(height: 36),
 
                       // Submit Button
                       ElevatedButton(
                         onPressed: _isSubmitting ? null : _submit,
+
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(

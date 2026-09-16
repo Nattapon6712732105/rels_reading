@@ -23,6 +23,7 @@ class MockData {
       author: AuthorInfo(id: 'author-1', username: 'พยัคฆ์ทมิฬคำราม'),
       chaptersCount: 128,
       createdAt: DateTime.now().subtract(const Duration(days: 15)),
+      tags: ['#กำลังภายใน', '#เกิดใหม่', '#เทพเซียน', '#พระเอกเทพ', '#แก้แค้น'],
     ),
     Novel(
       id: 'mock-novel-2',
@@ -34,6 +35,7 @@ class MockData {
       author: AuthorInfo(id: 'author-2', username: 'บุปผาโปรยปราย'),
       chaptersCount: 95,
       createdAt: DateTime.now().subtract(const Duration(days: 10)),
+      tags: ['#รักโรแมนติก', '#ย้อนเวลา', '#ท่านอ๋อง', '#แพทย์หญิง', '#ชิงไหวชิงพริบ'],
     ),
     Novel(
       id: 'mock-novel-3',
@@ -45,6 +47,7 @@ class MockData {
       author: AuthorInfo(id: 'author-3', username: 'NeonGhost'),
       chaptersCount: 64,
       createdAt: DateTime.now().subtract(const Duration(days: 7)),
+      tags: ['#ไซไฟ', '#โลกอนาคต', '#แฮกเกอร์', '#เอาชีวิตรอด', '#แฟนตาซี'],
     ),
     Novel(
       id: 'mock-novel-4',
@@ -56,8 +59,10 @@ class MockData {
       author: AuthorInfo(id: 'author-4', username: 'ชาอุ่นในสายฝน'),
       chaptersCount: 42,
       createdAt: DateTime.now().subtract(const Duration(days: 3)),
+      tags: ['#ชีวิตประจำวัน', '#อบอุ่นหัวใจ', '#เยียวยา', '#มิติคู่ขนาน', '#แฟนตาซี'],
     ),
   ];
+
 
   static final Map<String, List<Chapter>> sampleChapters = {
     'mock-novel-1': [

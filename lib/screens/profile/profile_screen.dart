@@ -3,21 +3,48 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/storage/local_novel_storage.dart';
+import '../../models/novel.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reader_settings_provider.dart';
 import '../../providers/novel_provider.dart';
 import '../../providers/bookmark_provider.dart';
 import '../auth/login_screen.dart';
 import '../auth/widgets/pdpa_consent_sheet.dart';
+import '../novel/novel_detail_screen.dart';
+import '../novel/create_novel_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _pdpaAccepted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPdpaStatus();
+  }
+
+  Future<void> _checkPdpaStatus() async {
+    final accepted = await LocalNovelStorage.isConsentAccepted();
+    if (mounted) {
+      setState(() {
+        _pdpaAccepted = accepted;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final settings = context.watch<ReaderSettingsProvider>();
     final user = auth.user;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -342,31 +369,85 @@ class ProfileScreen extends StatelessWidget {
                     ListTile(
                       leading: const Icon(Icons.format_size_rounded, color: AppTheme.primary),
                       title: const Text('ขนาดตัวอักษรเริ่มต้น', style: TextStyle(fontSize: 14)),
-                      trailing: Text(
-                        '${settings.fontSize.toInt()} px',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${settings.fontSize.toInt()} px',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
+                        ],
                       ),
+                      onTap: () => _showFontSizeSettingsSheet(context, settings),
                     ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.palette_outlined, color: AppTheme.secondary),
                       title: const Text('ธีมการอ่านเริ่มต้น', style: TextStyle(fontSize: 14)),
-                      trailing: Text(
-                        settings.themeMode.name.toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            settings.themeMode.name.toUpperCase(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
+                        ],
                       ),
+                      onTap: () => _showThemeSettingsSheet(context, settings),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.privacy_tip_outlined, color: AppTheme.primary),
+                      leading: Icon(
+                        _pdpaAccepted ? Icons.privacy_tip_outlined : Icons.warning_amber_rounded,
+                        color: _pdpaAccepted ? AppTheme.primary : Colors.amber,
+                      ),
                       title: const Text('นโยบาย PDPA และกฎหมายลิขสิทธิ์', style: TextStyle(fontSize: 14)),
-                      subtitle: const Text('ตรวจสอบสิทธิและความคุ้มครองผลงาน', style: TextStyle(fontSize: 12)),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                      onTap: () => PdpaConsentSheet.show(context, onAccepted: () {}),
+                      subtitle: Text(
+                        _pdpaAccepted ? 'ตรวจสอบสิทธิและความคุ้มครองผลงาน (ยินยอมแล้ว)' : 'กรุณาตรวจสอบและยินยอมสิทธิและความคุ้มครอง (ยังไม่ยินยอม)',
+                        style: TextStyle(fontSize: 12, color: _pdpaAccepted ? null : Colors.amber),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: (_pdpaAccepted ? const Color(0xFF06C755) : Colors.amber).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _pdpaAccepted ? 'ยินยอมแล้ว' : 'ยังไม่ยินยอม',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _pdpaAccepted ? const Color(0xFF06C755) : Colors.amber,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_ios_rounded, size: 13),
+                        ],
+                      ),
+                      onTap: () async {
+                        await PdpaConsentSheet.show(
+                          context,
+                          onAccepted: () async {
+                            final accepted = await LocalNovelStorage.isConsentAccepted();
+                            if (mounted) setState(() => _pdpaAccepted = accepted);
+                          },
+                        );
+                        final accepted = await LocalNovelStorage.isConsentAccepted();
+                        if (mounted) setState(() => _pdpaAccepted = accepted);
+                      },
                     ),
                   ],
                 ),
               ),
+
 
               const SizedBox(height: 28),
 
@@ -528,45 +609,86 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildStatsGrid(BuildContext context) {
     final bookmarks = context.watch<BookmarkProvider>().bookmarks;
     final novels = context.watch<NovelProvider>().allNovels;
-    final myNovels = novels.where((n) => n.authorId == 'me').length;
+    final auth = context.watch<AuthProvider>();
+    final currentUser = auth.user;
 
-    return GridView.count(
+    final myNovelsList = novels.where((n) {
+      if (currentUser == null) return false;
+      if (currentUser.id.isNotEmpty && (n.authorId == currentUser.id || n.author?.id == currentUser.id)) {
+        return true;
+      }
+      if (currentUser.username.isNotEmpty && n.author?.username.isNotEmpty == true &&
+          n.author!.username.trim().toLowerCase() == currentUser.username.trim().toLowerCase()) {
+        return true;
+      }
+      return false;
+    }).toList();
+
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 2.1,
-      children: [
-        _buildStatCard(
-          context,
-          icon: Icons.bookmark_added_rounded,
-          color: AppTheme.secondary,
-          title: 'ชั้นหนังสือ',
-          value: '${bookmarks.length} เรื่อง',
-        ),
-        _buildStatCard(
-          context,
-          icon: Icons.edit_note_rounded,
-          color: AppTheme.primary,
-          title: 'ผลงานที่แต่ง',
-          value: '$myNovels เรื่อง',
-        ),
-        _buildStatCard(
-          context,
-          icon: Icons.auto_stories_rounded,
-          color: const Color(0xFF06C755),
-          title: 'คลังนิยายระบบ',
-          value: '${novels.length} เรื่อง',
-        ),
-        _buildStatCard(
-          context,
-          icon: Icons.verified_user_rounded,
-          color: const Color(0xFF6366F1),
-          title: 'สถานะ PDPA',
-          value: 'ยินยอมแล้ว',
-        ),
-      ],
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 260,
+        mainAxisExtent: 68,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        switch (index) {
+          case 0:
+            return _buildStatCard(
+              context,
+              icon: Icons.bookmark_added_rounded,
+              color: AppTheme.secondary,
+              title: 'ชั้นหนังสือ',
+              value: '${bookmarks.length} เรื่อง',
+            );
+          case 1:
+            return _buildStatCard(
+              context,
+              icon: Icons.edit_note_rounded,
+              color: AppTheme.primary,
+              title: 'ผลงานที่แต่ง',
+              value: '${myNovelsList.length} เรื่อง',
+              onTap: auth.isLoggedIn
+                  ? () => _showMyNovelsSheet(context, myNovelsList)
+                  : () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('กรุณาเข้าสู่ระบบเพื่อดูผลงานที่คุณแต่ง')),
+                      );
+                    },
+            );
+          case 2:
+            return _buildStatCard(
+              context,
+              icon: Icons.auto_stories_rounded,
+              color: const Color(0xFF06C755),
+              title: 'คลังนิยายระบบ',
+              value: '${novels.length} เรื่อง',
+            );
+          case 3:
+          default:
+            return _buildStatCard(
+              context,
+              icon: _pdpaAccepted ? Icons.verified_user_rounded : Icons.warning_amber_rounded,
+              color: _pdpaAccepted ? const Color(0xFF06C755) : Colors.amber,
+              title: 'สถานะ PDPA',
+              value: _pdpaAccepted ? 'ยินยอมแล้ว' : 'ยังไม่ยินยอม',
+              onTap: () async {
+                await PdpaConsentSheet.show(
+                  context,
+                  onAccepted: () async {
+                    final accepted = await LocalNovelStorage.isConsentAccepted();
+                    if (mounted) setState(() => _pdpaAccepted = accepted);
+                  },
+                );
+                final accepted = await LocalNovelStorage.isConsentAccepted();
+                if (mounted) setState(() => _pdpaAccepted = accepted);
+              },
+            );
+        }
+      },
     );
   }
 
@@ -576,57 +698,462 @@ class ProfileScreen extends StatelessWidget {
     required Color color,
     required String title,
     required String value,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.12),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withOpacity(0.12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                      color: onTap != null ? color : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.grey.withOpacity(0.4)),
+          ],
         ),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
+    );
+  }
+
+  void _showFontSizeSettingsSheet(BuildContext context, ReaderSettingsProvider settings) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final currentSize = settings.fontSize;
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.format_size_rounded, color: AppTheme.primary),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'ขนาดตัวอักษรเริ่มต้น',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${currentSize.toInt()} px',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Live preview box
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: settings.backgroundColor,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+                      ),
+                      child: Text(
+                        'ตัวอย่างขนาดตัวอักษรสำหรับการอ่านนิยาย สามารถปรับให้พอดีกับสายตาของคุณได้ตลอดเวลา',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: currentSize,
+                          color: settings.textColor,
+                          height: settings.lineHeight,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        IconButton.filledTonal(
+                          onPressed: currentSize > 14
+                              ? () {
+                                  final newSize = currentSize - 1;
+                                  settings.setFontSize(newSize);
+                                  setSheetState(() {});
+                                }
+                              : null,
+                          icon: const Icon(Icons.remove_rounded),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: currentSize,
+                            min: 14.0,
+                            max: 30.0,
+                            divisions: 16,
+                            label: '${currentSize.toInt()} px',
+                            activeColor: AppTheme.primary,
+                            onChanged: (val) {
+                              settings.setFontSize(val);
+                              setSheetState(() {});
+                            },
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          onPressed: currentSize < 30
+                              ? () {
+                                  final newSize = currentSize + 1;
+                                  settings.setFontSize(newSize);
+                                  setSheetState(() {});
+                                }
+                              : null,
+                          icon: const Icon(Icons.add_rounded),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showThemeSettingsSheet(BuildContext context, ReaderSettingsProvider settings) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: const [
+                    Icon(Icons.palette_outlined, color: AppTheme.secondary),
+                    SizedBox(width: 8),
+                    Text(
+                      'ธีมการอ่านเริ่มต้น',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    _buildThemeChoice(
+                      context,
+                      settings: settings,
+                      title: 'โหมดมืด (Dark)',
+                      mode: ReaderThemeMode.dark,
+                      bgColor: AppTheme.readerDarkBg,
+                      textColor: AppTheme.readerDarkText,
+                    ),
+                    const SizedBox(width: 10),
+                    _buildThemeChoice(
+                      context,
+                      settings: settings,
+                      title: 'ถนอมสายตา (Sepia)',
+                      mode: ReaderThemeMode.sepia,
+                      bgColor: AppTheme.readerSepiaBg,
+                      textColor: AppTheme.readerSepiaText,
+                    ),
+                    const SizedBox(width: 10),
+                    _buildThemeChoice(
+                      context,
+                      settings: settings,
+                      title: 'โหมดสว่าง (Light)',
+                      mode: ReaderThemeMode.light,
+                      bgColor: AppTheme.readerLightBg,
+                      textColor: AppTheme.readerLightText,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeChoice(
+    BuildContext context, {
+    required ReaderSettingsProvider settings,
+    required String title,
+    required ReaderThemeMode mode,
+    required Color bgColor,
+    required Color textColor,
+  }) {
+    final isSelected = settings.themeMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          settings.setThemeMode(mode);
+          Navigator.pop(context);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? AppTheme.primary : Colors.grey.withOpacity(0.3),
+              width: isSelected ? 2.5 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primary.withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Aa',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: textColor),
+              ),
+              if (isSelected) ...[
+                const SizedBox(height: 6),
+                const Icon(Icons.check_circle_rounded, size: 16, color: AppTheme.primary),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
+
+  void _showMyNovelsSheet(BuildContext context, List<Novel> myNovels) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit_note_rounded, color: AppTheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'ผลงานที่คุณแต่ง (${myNovels.length} เรื่อง)',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CreateNovelScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('แต่งเรื่องใหม่'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: myNovels.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.menu_book_rounded, size: 56, color: Colors.grey.withOpacity(0.5)),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'ยังไม่มีผลงานที่คุณแต่งในบัญชีนี้',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'สร้างผลงานเรื่องแรกของคุณเพื่อเริ่มแชร์เรื่องราวให้นักอ่านทั่วประเทศ',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 13, color: Colors.grey.withOpacity(0.7)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: myNovels.length,
+                          separatorBuilder: (_, __) => const Divider(height: 16),
+                          itemBuilder: (context, index) {
+                            final novel = myNovels[index];
+                            return ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: novel.coverUrl.isNotEmpty
+                                    ? Image.network(
+                                        novel.coverUrl,
+                                        width: 48,
+                                        height: 64,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          width: 48,
+                                          height: 64,
+                                          color: AppTheme.primary.withOpacity(0.2),
+                                          child: const Icon(Icons.book, color: AppTheme.primary),
+                                        ),
+                                      )
+                                    : Container(
+                                        width: 48,
+                                        height: 64,
+                                        color: AppTheme.primary.withOpacity(0.2),
+                                        child: const Icon(Icons.book, color: AppTheme.primary),
+                                      ),
+                              ),
+                              title: Text(
+                                novel.title,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                '${novel.chaptersCount} ตอน • ${novel.tags.isNotEmpty ? novel.tags.take(2).join(" ") : "ไม่มีแท็ก"}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => NovelDetailScreen(novelId: novel.id)),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
+
 
 
 class _LineLinkDialog extends StatefulWidget {

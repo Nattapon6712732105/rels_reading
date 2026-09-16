@@ -1,41 +1,39 @@
 import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
+import '../../core/storage/local_novel_storage.dart';
 import '../../models/bookmark.dart';
 import '../../models/novel.dart';
-import '../mock_data.dart';
 
 class BookmarkRepository {
-  // Local cached fallback bookmarks
-  final List<Bookmark> _localBookmarks = [];
-
   Future<List<Bookmark>> getBookmarks() async {
     try {
       final res = await ApiClient.dio.get('/bookmarks');
       if (res.data['success'] == true && res.data['data'] is List) {
         final list = res.data['data'] as List;
-        return list.map((e) => Bookmark.fromJson(e as Map<String, dynamic>)).toList();
+        final backendBookmarks = list.map((e) => Bookmark.fromJson(e as Map<String, dynamic>)).toList();
+        for (final b in backendBookmarks) {
+          await LocalNovelStorage.saveBookmark(b);
+        }
+        return backendBookmarks;
       }
-      return _localBookmarks;
+      return await LocalNovelStorage.getBookmarks();
     } on DioException catch (_) {
-      // Fallback
-      if (_localBookmarks.isEmpty) {
-        _localBookmarks.add(
-          Bookmark(
-            id: 'local-bm-1',
-            userId: 'me',
-            novelId: MockData.sampleNovels.first.id,
-            novel: MockData.sampleNovels.first,
-            createdAt: DateTime.now(),
-          ),
-        );
-      }
-      return _localBookmarks;
+      // Offline fallback: return strictly what user has actually bookmarked locally
+      return await LocalNovelStorage.getBookmarks();
     } catch (_) {
-      return _localBookmarks;
+      return await LocalNovelStorage.getBookmarks();
     }
   }
 
-  Future<bool> addBookmark(Novel novel) async {
+  Future<bool> addBookmark(Novel novel, {String? userId}) async {
+    final newBookmark = Bookmark(
+      id: 'bm-${DateTime.now().millisecondsSinceEpoch}',
+      userId: userId ?? 'me',
+      novelId: novel.id,
+      novel: novel,
+      createdAt: DateTime.now(),
+    );
+
     try {
       final res = await ApiClient.dio.post(
         '/bookmarks',
@@ -43,50 +41,30 @@ class BookmarkRepository {
       );
 
       if (res.data['success'] == true) {
-        _localBookmarks.removeWhere((b) => b.novelId == novel.id);
-        _localBookmarks.insert(
-          0,
-          Bookmark(
-            id: 'bm-${DateTime.now().millisecondsSinceEpoch}',
-            userId: 'me',
-            novelId: novel.id,
-            novel: novel,
-            createdAt: DateTime.now(),
-          ),
-        );
+        await LocalNovelStorage.saveBookmark(newBookmark);
         return true;
       }
       return false;
     } on DioException catch (_) {
-      // Offline fallback
-      _localBookmarks.removeWhere((b) => b.novelId == novel.id);
-      _localBookmarks.insert(
-        0,
-        Bookmark(
-          id: 'local-bm-${DateTime.now().millisecondsSinceEpoch}',
-          userId: 'me',
-          novelId: novel.id,
-          novel: novel,
-          createdAt: DateTime.now(),
-        ),
-      );
+      // Offline fallback: save locally
+      await LocalNovelStorage.saveBookmark(newBookmark);
       return true;
     } catch (_) {
-      return false;
+      await LocalNovelStorage.saveBookmark(newBookmark);
+      return true;
     }
   }
 
   Future<bool> removeBookmark(String novelId) async {
+    await LocalNovelStorage.removeBookmark(novelId);
     try {
       final res = await ApiClient.dio.delete('/bookmarks/$novelId');
-      _localBookmarks.removeWhere((b) => b.novelId == novelId);
       return res.data['success'] == true;
     } on DioException catch (_) {
-      _localBookmarks.removeWhere((b) => b.novelId == novelId);
       return true;
     } catch (_) {
-      _localBookmarks.removeWhere((b) => b.novelId == novelId);
       return true;
     }
   }
 }
+

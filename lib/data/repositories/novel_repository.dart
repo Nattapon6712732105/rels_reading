@@ -72,9 +72,11 @@ class NovelRepository {
     String? coverUrl,
     String? authorId,
     String? authorName,
+    List<String>? tags,
   }) async {
-    final effectiveAuthorId = (authorId != null && authorId.isNotEmpty) ? authorId : 'me';
-    final effectiveAuthorName = (authorName != null && authorName.isNotEmpty) ? authorName : 'ฉัน';
+    final effectiveAuthorId = (authorId != null && authorId.isNotEmpty) ? authorId : 'anonymous';
+    final effectiveAuthorName = (authorName != null && authorName.isNotEmpty) ? authorName : 'นักเขียน';
+    final effectiveTags = tags ?? [];
 
     try {
       final res = await ApiClient.dio.post(
@@ -83,6 +85,7 @@ class NovelRepository {
           'title': title.trim(),
           if (description != null && description.isNotEmpty) 'description': description.trim(),
           if (coverUrl != null && coverUrl.isNotEmpty) 'cover_url': coverUrl.trim(),
+          'tags': effectiveTags,
         },
       );
 
@@ -92,6 +95,7 @@ class NovelRepository {
             ? created.copyWith(
                 authorId: effectiveAuthorId,
                 author: AuthorInfo(id: effectiveAuthorId, username: effectiveAuthorName),
+                tags: created.tags.isNotEmpty ? created.tags : effectiveTags,
               )
             : created;
         await LocalNovelStorage.saveNovel(finalNovel);
@@ -109,6 +113,7 @@ class NovelRepository {
         author: AuthorInfo(id: effectiveAuthorId, username: effectiveAuthorName),
         createdAt: DateTime.now(),
         chaptersCount: 0,
+        tags: effectiveTags,
       );
       await LocalNovelStorage.saveNovel(newNovel);
       return newNovel;
@@ -122,18 +127,18 @@ class NovelRepository {
     String? coverUrl,
     String? requesterUserId,
     String? requesterUsername,
+    List<String>? tags,
   }) async {
-    // Validate ownership in local storage
+    // Validate ownership in local storage strictly
     final localNovels = await LocalNovelStorage.getNovels();
     final target = localNovels.where((n) => n.id == id).firstOrNull;
-    if (target != null && requesterUserId != null) {
-      final isOwner = target.authorId == requesterUserId ||
-          target.author?.id == requesterUserId ||
-          target.authorId == 'me' ||
-          (requesterUsername != null &&
+    if (target != null) {
+      final isOwner = (requesterUserId != null && requesterUserId.isNotEmpty &&
+              (target.authorId == requesterUserId || target.author?.id == requesterUserId)) ||
+          (requesterUsername != null && requesterUsername.isNotEmpty &&
               target.author?.username.trim().toLowerCase() == requesterUsername.trim().toLowerCase());
       if (!isOwner) {
-        throw Exception('คุณไม่มีสิทธิ์แก้ไขนิยายเรื่องนี้ (สงวนสิทธิ์เฉพาะเจ้าของผลงาน)');
+        throw Exception('คุณไม่มีสิทธิ์แก้ไขนิยายเรื่องนี้ (สงวนสิทธิ์เฉพาะเจ้าของผลงานเท่านั้น)');
       }
     }
 
@@ -145,7 +150,9 @@ class NovelRepository {
           'title': title.trim(),
           if (description != null) 'description': description.trim(),
           if (coverUrl != null) 'cover_url': coverUrl.trim(),
+          if (tags != null && tags.isNotEmpty) 'tags': tags,
         },
+
       );
 
       if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
@@ -161,6 +168,7 @@ class NovelRepository {
         title: title.trim(),
         description: description?.trim() ?? current.description,
         coverUrl: coverUrl?.trim() ?? current.coverUrl,
+        tags: tags ?? current.tags,
       );
     }
 
@@ -173,14 +181,13 @@ class NovelRepository {
     String? requesterUserId,
     String? requesterUsername,
   }) async {
-    // Validate ownership before deletion
+    // Validate ownership before deletion strictly
     final localNovels = await LocalNovelStorage.getNovels();
     final target = localNovels.where((n) => n.id == id).firstOrNull;
-    if (target != null && requesterUserId != null) {
-      final isOwner = target.authorId == requesterUserId ||
-          target.author?.id == requesterUserId ||
-          target.authorId == 'me' ||
-          (requesterUsername != null &&
+    if (target != null) {
+      final isOwner = (requesterUserId != null && requesterUserId.isNotEmpty &&
+              (target.authorId == requesterUserId || target.author?.id == requesterUserId)) ||
+          (requesterUsername != null && requesterUsername.isNotEmpty &&
               target.author?.username.trim().toLowerCase() == requesterUsername.trim().toLowerCase());
       if (!isOwner) {
         throw Exception('คุณไม่มีสิทธิ์ลบนิยายเรื่องนี้ (สงวนสิทธิ์เฉพาะเจ้าของผลงานเท่านั้น)');
@@ -194,6 +201,7 @@ class NovelRepository {
     }
     await LocalNovelStorage.deleteNovel(id);
   }
+
 
   Future<String> uploadCoverImage({
     required Uint8List imageBytes,

@@ -80,17 +80,24 @@ class NovelProvider extends ChangeNotifier {
           novel.displayAuthorName.toLowerCase().contains(_searchQuery.toLowerCase());
 
       if (!matchesSearch) return false;
-      if (_selectedCategory == 'ทั้งหมด') return true;
-
-      // Simple keyword matching for category filter
-      if (_selectedCategory == 'กำลังภายใน') {
-        return novel.title.contains('ราชันย์') || novel.description.contains('ปราณ') || novel.description.contains('ยุทธ์');
+      // Category filter
+      if (_selectedCategory == 'ทั้งหมด') {
+        // no-op
+      } else if (_selectedCategory == 'กำลังภายใน') {
+        return novel.tags.any((t) => t.contains('กำลังภายใน') || t.contains('เทพเซียน')) ||
+            novel.title.contains('จอม') || novel.title.contains('ราชันย์') || novel.description.contains('วิชา');
       } else if (_selectedCategory == 'โรแมนติก') {
-        return novel.title.contains('รัก') || novel.title.contains('ดวงใจ') || novel.description.contains('ชายา');
+        return novel.tags.any((t) => t.contains('โรแมนติก') || t.contains('รัก')) ||
+            novel.title.contains('รัก') || novel.description.contains('ท่านอ๋อง');
+      } else if (_selectedCategory == 'แฟนตาซี') {
+        return novel.tags.any((t) => t.contains('แฟนตาซี') || t.contains('เวทมนตร์')) ||
+            novel.title.contains('แฟนตาซี') || novel.description.contains('มิติ');
       } else if (_selectedCategory == 'ไซไฟ/โลกอนาคต') {
-        return novel.title.contains('ไซเบอร์') || novel.description.contains('แฮกเกอร์');
+        return novel.tags.any((t) => t.contains('ไซไฟ') || t.contains('อนาคต')) ||
+            novel.title.contains('ไซเบอร์') || novel.description.contains('แฮกเกอร์');
       } else if (_selectedCategory == 'ชีวิตประจำวัน') {
-        return novel.title.contains('ร้าน') || novel.description.contains('สะดวกซื้อ');
+        return novel.tags.any((t) => t.contains('ชีวิตประจำวัน') || t.contains('อบอุ่น')) ||
+            novel.title.contains('ร้าน') || novel.description.contains('สะดวกซื้อ');
       }
       return true;
     }).toList();
@@ -135,6 +142,7 @@ class NovelProvider extends ChangeNotifier {
     String? coverUrl,
     String? authorId,
     String? authorName,
+    List<String>? tags,
   }) async {
     final newNovel = await _novelRepo.createNovel(
       title: title,
@@ -142,6 +150,7 @@ class NovelProvider extends ChangeNotifier {
       coverUrl: coverUrl,
       authorId: authorId,
       authorName: authorName,
+      tags: tags,
     );
     _novels.insert(0, newNovel);
     _applyFilter();
@@ -188,6 +197,7 @@ class NovelProvider extends ChangeNotifier {
     String? coverUrl,
     String? requesterUserId,
     String? requesterUsername,
+    List<String>? tags,
   }) async {
     final updated = await _novelRepo.updateNovel(
       id: id,
@@ -196,6 +206,7 @@ class NovelProvider extends ChangeNotifier {
       coverUrl: coverUrl,
       requesterUserId: requesterUserId,
       requesterUsername: requesterUsername,
+      tags: tags,
     );
     final idx = _novels.indexWhere((n) => n.id == id);
     if (idx >= 0) {

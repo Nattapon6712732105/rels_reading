@@ -310,17 +310,18 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 14,
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 180,
+                    mainAxisExtent: 285,
+                    crossAxisSpacing: 16,
                     mainAxisSpacing: 20,
-                    childAspectRatio: 0.58, // Portrait 2:3-ish like Webtoons
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => _buildNovelCard(context, novelProvider.novels[index]),
                     childCount: novelProvider.novels.length,
                   ),
                 ),
+
               ),
           ],
         ),
@@ -611,9 +612,23 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.65),
             ),
           ),
+          if (novel.tags.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              novel.tags.take(2).join(' '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primary,
+              ),
+            ),
+          ],
         ],
       ),
     );
+
   }
 
   // ── Section Header ─────────────────────────────────────────────────────────
