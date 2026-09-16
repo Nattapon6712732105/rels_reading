@@ -181,6 +181,16 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Get LINE Official Account details (QR Code & basic ID)
+  Future<Map<String, dynamic>> getLineOaInfo() async {
+    return await _repo.getLineOaInfo();
+  }
+
+  /// Generate a 6-digit Link Code for linking via LINE chat
+  Future<Map<String, dynamic>> createLineLinkCode() async {
+    return await _repo.createLineLinkCode();
+  }
+
   /// Link LINE User ID to current user account
   Future<bool> linkLineAccount(String lineUserId) async {
     _isLoading = true;

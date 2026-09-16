@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
 import '../../models/novel.dart';
@@ -93,4 +95,32 @@ class NovelRepository {
       throw Exception(msg);
     }
   }
+
+  Future<String> uploadCoverImage({
+    required Uint8List imageBytes,
+    required String filename,
+  }) async {
+    try {
+      final base64String = base64Encode(imageBytes);
+      final res = await ApiClient.dio.post(
+        '/upload/cover',
+        data: {
+          'image': base64String,
+          'filename': filename,
+        },
+      );
+
+      if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
+        final url = res.data['data']['url'] as String?;
+        if (url != null && url.isNotEmpty) {
+          return url;
+        }
+      }
+      throw Exception(res.data['message'] ?? 'อัปโหลดภาพปกไม่สำเร็จ');
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการอัปโหลดภาพ';
+      throw Exception(msg);
+    }
+  }
 }
+

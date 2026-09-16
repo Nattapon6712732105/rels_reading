@@ -15,18 +15,33 @@ class HomeScreen extends StatelessWidget {
     final novelProvider = context.watch<NovelProvider>();
     final authProvider = context.watch<AuthProvider>();
 
+    final width = MediaQuery.of(context).size.width;
+    final int crossAxisCount;
+    if (width < 600) {
+      crossAxisCount = 2;
+    } else if (width < 900) {
+      crossAxisCount = 3;
+    } else if (width < 1200) {
+      crossAxisCount = 4;
+    } else {
+      crossAxisCount = 5;
+    }
+
     return Scaffold(
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await novelProvider.fetchNovels();
-          },
-          child: CustomScrollView(
-            slivers: [
-              // App Bar & Search
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await novelProvider.fetchNovels();
+              },
+              child: CustomScrollView(
+                slivers: [
+                  // App Bar & Search
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -182,11 +197,11 @@ class HomeScreen extends StatelessWidget {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.62,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.64,
                       crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      mainAxisSpacing: 18,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -203,7 +218,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    )));
   }
 
   Widget _buildStatusChip(BuildContext context, AuthProvider auth, NovelProvider novels) {

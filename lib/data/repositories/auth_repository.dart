@@ -166,4 +166,41 @@ class AuthRepository {
       throw Exception(msg);
     }
   }
+
+  /// Get LINE OA info (QR code, Basic ID, Add-friend URL)
+  Future<Map<String, dynamic>> getLineOaInfo() async {
+    try {
+      final res = await ApiClient.dio.get('/line/oa-info');
+      if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
+        return res.data['data'] as Map<String, dynamic>;
+      }
+      return {
+        'botBasicId': '@855szpwc',
+        'displayName': 'rels reading',
+        'addFriendUrl': 'https://line.me/R/ti/p/@855szpwc',
+        'qrCodeUrl': 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://line.me/R/ti/p/@855szpwc',
+      };
+    } catch (_) {
+      return {
+        'botBasicId': '@855szpwc',
+        'displayName': 'rels reading',
+        'addFriendUrl': 'https://line.me/R/ti/p/@855szpwc',
+        'qrCodeUrl': 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://line.me/R/ti/p/@855szpwc',
+      };
+    }
+  }
+
+  /// Create a 6-digit Link Code for linking via LINE chat
+  Future<Map<String, dynamic>> createLineLinkCode() async {
+    try {
+      final res = await ApiClient.dio.post('/line/link-code');
+      if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
+        return res.data['data'] as Map<String, dynamic>;
+      }
+      throw Exception(res.data['message'] ?? 'ไม่สามารถสร้างรหัสเชื่อมต่อได้');
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการสร้างรหัสเชื่อมต่อ';
+      throw Exception(msg);
+    }
+  }
 }

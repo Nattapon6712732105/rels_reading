@@ -154,4 +154,30 @@ void main() {
       expect(MockData.sampleChapters['mock-novel-1']?.isNotEmpty, true);
     });
   });
+
+  group('LINE OA & Cover Upload Tests', () {
+    test('LINE OA default info format', () {
+      const botId = '@855szpwc';
+      final qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://line.me/R/ti/p/$botId';
+      expect(qrUrl.contains('@855szpwc'), true);
+      expect(qrUrl.startsWith('https://api.qrserver.com'), true);
+    });
+
+    test('Novel with Supabase Storage cover url serialized properly', () {
+      const storageUrl = 'https://supabase.co/storage/v1/object/public/covers/cover-123.jpg';
+      final novel = Novel(
+        id: 'n-upload-1',
+        title: 'นิยายทดสอบอัปโหลด',
+        description: 'มีภาพปกจาก Storage',
+        coverUrl: storageUrl,
+        authorId: 'u-1',
+        createdAt: DateTime.now(),
+      );
+      final json = novel.toJson();
+      expect(json['cover_url'], storageUrl);
+      final deserialized = Novel.fromJson(json);
+      expect(deserialized.coverUrl, storageUrl);
+    });
+  });
 }
+
