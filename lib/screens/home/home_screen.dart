@@ -257,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Row(
                   children: [
-                    const Icon(Icons.menu_book_rounded, size: 18, color: AppTheme.primary),
+                    const Icon(Icons.menu_book_rounded, size: 18, color: Color.fromARGB(255, 67, 223, 255)),
                     const SizedBox(width: 8),
                     Text(
                       novelProvider.selectedCategory == 'ทั้งหมด'
@@ -322,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(builder: (_) => const CreateNovelScreen()),
         ),
         backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onPrimary,
         icon: const Icon(Icons.edit_note_rounded),
         label: const Text('แต่งนิยาย', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 4,

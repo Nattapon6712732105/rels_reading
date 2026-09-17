@@ -204,7 +204,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                           label: const Text('สำรวจและค้นหานิยาย'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primary,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppTheme.onPrimary,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),

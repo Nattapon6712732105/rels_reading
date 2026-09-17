@@ -56,13 +56,13 @@ class _MainNavScreenState extends State<MainNavScreen> {
           elevation: 0,
           title: Row(
             children: [
-              // Logo icon with orange flame gradient
+              // Logo icon with brand gradient
               Container(
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFF5722), Color(0xFFFFA000)],
+                    colors: [AppTheme.primary, Color(0xFF00B4D8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -70,7 +70,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                 ),
                 child: const Icon(
                   Icons.auto_stories_rounded,
-                  color: Colors.white,
+                  color: AppTheme.onPrimary,
                   size: 20,
                 ),
               ),
@@ -127,7 +127,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                       ? Text(
                           user?.username.isNotEmpty == true ? user!.username[0].toUpperCase() : 'U',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.onPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),

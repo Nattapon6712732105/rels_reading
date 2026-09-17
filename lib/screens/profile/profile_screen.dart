@@ -75,7 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       style: const TextStyle(
                                         fontSize: 28,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: AppTheme.onPrimary,
                                       ),
                                     )
                                   : null,

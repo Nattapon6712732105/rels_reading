@@ -10,11 +10,12 @@ enum ReaderThemeMode {
 }
 
 class AppTheme {
-  // Brand Colors (Khui AI inspired deep dark & vibrant orange-gold)
-  static const Color primary = Color(0xFFFF5722); // Vibrant Orange Flame
-  static const Color primaryDark = Color(0xFFE64A19);
+  // Brand Colors (Electric Cyan / Aqua Blue - Color.fromARGB(255, 67, 223, 255))
+  static const Color primary = Color.fromARGB(255, 67, 223, 255); // #43DFFF
+  static const Color onPrimary = Color(0xFF0E0F14); // Dark contrast text/icon on primary
+  static const Color primaryDark = Color(0xFF00B4D8);
   static const Color secondary = Color(0xFFFFA000); // Amber Gold
-  static const Color accent = Color(0xFFFF7043); // Coral
+  static const Color accent = Color(0xFF38BDF8); // Sky Blue
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
@@ -44,6 +45,7 @@ class AppTheme {
       scaffoldBackgroundColor: const Color(0xFF0E0F14),
       colorScheme: const ColorScheme.dark(
         primary: primary,
+        onPrimary: onPrimary,
         secondary: secondary,
         surface: Color(0xFF16171F),
         surfaceContainerHighest: Color(0xFF22232E),
@@ -118,7 +120,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: Colors.white,
+          foregroundColor: onPrimary,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -138,6 +140,7 @@ class AppTheme {
       scaffoldBackgroundColor: const Color(0xFFF8FAFC),
       colorScheme: const ColorScheme.light(
         primary: primary,
+        onPrimary: onPrimary,
         secondary: secondary,
         surface: Colors.white,
         surfaceContainerHighest: Color(0xFFE2E8F0),
@@ -213,7 +216,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: Colors.white,
+          foregroundColor: onPrimary,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(

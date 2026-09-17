@@ -134,7 +134,7 @@ class _AuthorDashboardScreenState extends State<AuthorDashboardScreen> {
                             label: const Text('แต่งเรื่องใหม่'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primary,
-                              foregroundColor: Colors.white,
+                              foregroundColor: AppTheme.onPrimary,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
@@ -269,7 +269,7 @@ class _AuthorDashboardScreenState extends State<AuthorDashboardScreen> {
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppTheme.onPrimary,
                         ),
                       )
                     : null,
@@ -563,7 +563,7 @@ class _AuthorDashboardScreenState extends State<AuthorDashboardScreen> {
                     label: const Text('เพิ่มตอนใหม่'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppTheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),

@@ -66,11 +66,11 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white),
+              const Icon(Icons.check_circle_rounded, color: AppTheme.onPrimary),
               const SizedBox(width: 12),
               Text(
                 'เช็คอินสำเร็จ! สตรีคปัจจุบัน: $_currentStreak วันต่อเนื่อง 🔥',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.onPrimary),
               ),
             ],
           ),
@@ -299,7 +299,7 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: _hasCheckedInToday ? const Color(0xFF64748B) : Colors.white,
+                          color: _hasCheckedInToday ? const Color(0xFF64748B) : AppTheme.onPrimary,
                         ),
                       ),
                     ),

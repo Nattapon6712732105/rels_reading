@@ -322,7 +322,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('เข้าสู่ระบบด้วยบัญชีทดลอง (${auth.user?.username})'),
+          content: Text(
+            'เข้าสู่ระบบด้วยบัญชีทดลอง (${auth.user?.username})',
+            style: const TextStyle(color: AppTheme.onPrimary),
+          ),
           backgroundColor: AppTheme.primary,
         ),
       );
@@ -529,7 +532,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.onPrimary),
                           )
                         : const Text('เข้าสู่ระบบ'),
                   ),

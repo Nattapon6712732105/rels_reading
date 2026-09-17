@@ -714,7 +714,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             IconButton(
                               style: IconButton.styleFrom(
                                 backgroundColor: AppTheme.primary,
-                                foregroundColor: Colors.white,
+                                foregroundColor: AppTheme.onPrimary,
                               ),
                               icon: const Icon(Icons.send_rounded, size: 20),
                               onPressed: () async {
@@ -1011,7 +1011,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppTheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 3,

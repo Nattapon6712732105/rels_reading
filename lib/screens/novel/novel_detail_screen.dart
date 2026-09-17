@@ -725,7 +725,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                   novel?.displayAuthorName.isNotEmpty == true
                                       ? novel!.displayAuthorName[0].toUpperCase()
                                       : 'W',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.onPrimary),
                                 ),
                               ),
                               const SizedBox(width: 8),

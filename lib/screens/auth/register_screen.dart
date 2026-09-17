@@ -489,7 +489,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.onPrimary),
                           )
                         : const Text('ลงทะเบียนและเข้าสู่ระบบ'),
                   ),
