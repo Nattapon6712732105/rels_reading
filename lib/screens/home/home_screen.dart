@@ -355,9 +355,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Background cover
+              // Background cover with cache constraint
               novel.coverUrl.isNotEmpty
                   ? Image.network(novel.coverUrl, fit: BoxFit.cover,
+                      cacheWidth: 600,
                       errorBuilder: (_, __, ___) => _buildGradientFallback())
                   : _buildGradientFallback(),
               // Gradient overlay
@@ -461,6 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     novel.coverUrl.isNotEmpty
                         ? Image.network(novel.coverUrl, fit: BoxFit.cover,
+                            cacheWidth: 250,
                             errorBuilder: (_, __, ___) => _buildSmallFallback())
                         : _buildSmallFallback(),
                     if (novel.chaptersCount > 0)
@@ -526,6 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? Image.network(
                           novel.coverUrl,
                           fit: BoxFit.cover,
+                          cacheWidth: 400,
                           errorBuilder: (_, __, ___) => _buildFallbackCover(),
                         )
                       : _buildFallbackCover(),

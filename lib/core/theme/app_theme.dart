@@ -8,11 +8,11 @@ enum ReaderThemeMode {
 }
 
 class AppTheme {
-  // Brand Colors
-  static const Color primary = Color(0xFF6366F1); // Indigo
-  static const Color primaryDark = Color(0xFF4F46E5);
-  static const Color secondary = Color(0xFFF59E0B); // Amber / Gold
-  static const Color accent = Color(0xFFEC4899); // Rose
+  // Brand Colors (Khui AI inspired deep dark & vibrant orange-gold)
+  static const Color primary = Color(0xFFFF5722); // Vibrant Orange Flame
+  static const Color primaryDark = Color(0xFFE64A19);
+  static const Color secondary = Color(0xFFFFA000); // Amber Gold
+  static const Color accent = Color(0xFFFF7043); // Coral
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
@@ -24,7 +24,7 @@ class AppTheme {
   static const Color readerSepiaBg = Color(0xFFF7EEDD);
   static const Color readerSepiaText = Color(0xFF4A3E30);
 
-  static const Color readerDarkBg = Color(0xFF121824);
+  static const Color readerDarkBg = Color(0xFF121318);
   static const Color readerDarkText = Color(0xFFCBD5E1);
 
   // App Themes (Dark as default for novel reading premium aesthetic)
@@ -33,24 +33,24 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.dark,
       useMaterial3: true,
-      scaffoldBackgroundColor: const Color(0xFF0B0F19),
+      scaffoldBackgroundColor: const Color(0xFF0E0F14),
       colorScheme: const ColorScheme.dark(
         primary: primary,
         secondary: secondary,
-        surface: Color(0xFF131B2E),
-        surfaceContainerHighest: Color(0xFF1E293B),
+        surface: Color(0xFF16171F),
+        surfaceContainerHighest: Color(0xFF22232E),
         error: error,
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF131B2E),
+        color: const Color(0xFF16171F),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF1E293B), width: 1),
+          side: const BorderSide(color: Color(0xFF252733), width: 1),
         ),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF0B0F19),
+        backgroundColor: Color(0xFF0E0F14),
         elevation: 0,
         centerTitle: false,
         iconTheme: IconThemeData(color: Colors.white),
@@ -61,14 +61,14 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF0E1526),
+        backgroundColor: Color(0xFF121319),
         selectedItemColor: primary,
         unselectedItemColor: Color(0xFF64748B),
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: const Color(0xFF0E1526),
+        backgroundColor: const Color(0xFF121319),
         indicatorColor: primary.withOpacity(0.18),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {

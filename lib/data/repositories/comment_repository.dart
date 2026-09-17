@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
 import '../../models/comment.dart';
-import '../mock_data.dart';
 
 class CommentRepository {
   Future<List<Comment>> getComments(String chapterId) async {
@@ -15,11 +14,9 @@ class CommentRepository {
         final list = res.data['data'] as List;
         return list.map((e) => Comment.fromJson(e as Map<String, dynamic>)).toList();
       }
-      return MockData.sampleComments[chapterId] ?? [];
-    } on DioException catch (_) {
-      return MockData.sampleComments[chapterId] ?? [];
+      return [];
     } catch (_) {
-      return MockData.sampleComments[chapterId] ?? [];
+      return [];
     }
   }
 
@@ -42,20 +39,10 @@ class CommentRepository {
       }
       throw Exception(res.data['message'] ?? 'ส่งความคิดเห็นไม่สำเร็จ');
     } on DioException catch (e) {
-      if (e.response?.statusCode == 500) {
-        final newComment = Comment(
-          id: 'local-com-${DateTime.now().millisecondsSinceEpoch}',
-          chapterId: chapterId,
-          userId: 'me',
-          content: content,
-          user: CommentUser(id: 'me', username: currentUsername ?? 'ฉัน'),
-          createdAt: DateTime.now(),
-        );
-        MockData.sampleComments.putIfAbsent(chapterId, () => []).insert(0, newComment);
-        return newComment;
-      }
       final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
       throw Exception(msg);
+    } catch (e) {
+      throw Exception('ไม่สามารถส่งความคิดเห็นได้: $e');
     }
   }
 }

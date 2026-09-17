@@ -1,12 +1,8 @@
 import '../../core/api/api_client.dart';
-import '../../core/storage/local_novel_storage.dart';
 import '../../models/chapter.dart';
-import '../mock_data.dart';
 
 class ChapterRepository {
   Future<List<Chapter>> getChapters(String novelId) async {
-    final localChapters = await LocalNovelStorage.getChapters(novelId);
-
     try {
       final res = await ApiClient.dio.get(
         '/chapters',
@@ -15,26 +11,13 @@ class ChapterRepository {
 
       if (res.data['success'] == true && res.data['data'] is List) {
         final list = res.data['data'] as List;
-        final remoteChapters = list.map((e) => Chapter.fromJson(e as Map<String, dynamic>)).toList();
-
-        // Merge with local chapters
-        final Map<String, Chapter> map = {};
-        for (final c in localChapters) {
-          map['${c.chapterNumber}'] = c;
-        }
-        for (final c in remoteChapters) {
-          map['${c.chapterNumber}'] = c;
-        }
-        final merged = map.values.toList();
-        merged.sort((a, b) => a.chapterNumber.compareTo(b.chapterNumber));
-        return merged;
+        final chapters = list.map((e) => Chapter.fromJson(e as Map<String, dynamic>)).toList();
+        chapters.sort((a, b) => a.chapterNumber.compareTo(b.chapterNumber));
+        return chapters;
       }
       throw Exception(res.data['message'] ?? 'ไม่สามารถดึงข้อมูลตอนได้');
-    } catch (_) {
-      if (localChapters.isNotEmpty) {
-        return localChapters;
-      }
-      return MockData.sampleChapters[novelId] ?? [];
+    } catch (e) {
+      throw Exception('ไม่สามารถดึงรายการตอนได้: $e');
     }
   }
 
@@ -45,17 +28,8 @@ class ChapterRepository {
         return Chapter.fromJson(res.data['data'] as Map<String, dynamic>);
       }
       throw Exception(res.data['message'] ?? 'ไม่พบเนื้อหาตอน');
-    } catch (_) {
-      // Search in sample chapters or throw
-      for (final chapters in MockData.sampleChapters.values) {
-        for (final ch in chapters) {
-          if (ch.id == chapterId) return ch;
-        }
-      }
-      if (MockData.sampleChapters['mock-novel-1']?.isNotEmpty == true) {
-        return MockData.sampleChapters['mock-novel-1']!.first;
-      }
-      throw Exception('ไม่พบเนื้อหาตอน');
+    } catch (e) {
+      throw Exception('ไม่สามารถดึงเนื้อหาตอนนี้ได้: $e');
     }
   }
 
@@ -77,24 +51,11 @@ class ChapterRepository {
       );
 
       if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
-        final saved = Chapter.fromJson(res.data['data'] as Map<String, dynamic>);
-        await LocalNovelStorage.saveChapter(saved);
-        return saved;
+        return Chapter.fromJson(res.data['data'] as Map<String, dynamic>);
       }
       throw Exception(res.data['message'] ?? 'บันทึกตอนไม่สำเร็จ');
-    } catch (_) {
-      // Offline / Error fallback: save persistently in local storage
-      final newChapter = Chapter(
-        id: 'local-ch-${DateTime.now().millisecondsSinceEpoch}',
-        novelId: novelId,
-        chapterNumber: chapterNumber,
-        title: title.trim(),
-        content: content?.trim() ?? '',
-        createdAt: DateTime.now(),
-      );
-      await LocalNovelStorage.saveChapter(newChapter);
-      MockData.sampleChapters.putIfAbsent(novelId, () => []).add(newChapter);
-      return newChapter;
+    } catch (e) {
+      throw Exception('เกิดข้อผิดพลาดในการบันทึกตอน: $e');
     }
   }
 }

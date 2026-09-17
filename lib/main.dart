@@ -17,6 +17,10 @@ void main() async {
   // Initialize Dio API client and token interceptors
   ApiClient.init();
 
+  // Restrict Flutter image cache to prevent runaway RAM consumption (caps at 64MB)
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 64 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 100;
+
   if (kIsWeb) {
     try {
       await GoogleSignIn.instance.initialize(

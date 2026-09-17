@@ -1,27 +1,23 @@
 import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
-import '../../core/storage/local_novel_storage.dart';
 import '../../models/bookmark.dart';
 import '../../models/novel.dart';
 
 class BookmarkRepository {
+  final List<Bookmark> _sessionBookmarks = [];
+
   Future<List<Bookmark>> getBookmarks() async {
     try {
       final res = await ApiClient.dio.get('/bookmarks');
       if (res.data['success'] == true && res.data['data'] is List) {
         final list = res.data['data'] as List;
-        final backendBookmarks = list.map((e) => Bookmark.fromJson(e as Map<String, dynamic>)).toList();
-        for (final b in backendBookmarks) {
-          await LocalNovelStorage.saveBookmark(b);
-        }
-        return backendBookmarks;
+        return list.map((e) => Bookmark.fromJson(e as Map<String, dynamic>)).toList();
       }
-      return await LocalNovelStorage.getBookmarks();
+      return _sessionBookmarks;
     } on DioException catch (_) {
-      // Offline fallback: return strictly what user has actually bookmarked locally
-      return await LocalNovelStorage.getBookmarks();
+      return _sessionBookmarks;
     } catch (_) {
-      return await LocalNovelStorage.getBookmarks();
+      return _sessionBookmarks;
     }
   }
 
@@ -41,30 +37,29 @@ class BookmarkRepository {
       );
 
       if (res.data['success'] == true) {
-        await LocalNovelStorage.saveBookmark(newBookmark);
+        _sessionBookmarks.removeWhere((b) => b.novelId == novel.id);
+        _sessionBookmarks.insert(0, newBookmark);
         return true;
       }
-      return false;
-    } on DioException catch (_) {
-      // Offline fallback: save locally
-      await LocalNovelStorage.saveBookmark(newBookmark);
-      return true;
     } catch (_) {
-      await LocalNovelStorage.saveBookmark(newBookmark);
+      // Offline fallback: keep in memory
+      _sessionBookmarks.removeWhere((b) => b.novelId == novel.id);
+      _sessionBookmarks.insert(0, newBookmark);
       return true;
     }
+
+    _sessionBookmarks.removeWhere((b) => b.novelId == novel.id);
+    _sessionBookmarks.insert(0, newBookmark);
+    return true;
   }
 
   Future<bool> removeBookmark(String novelId) async {
-    await LocalNovelStorage.removeBookmark(novelId);
+    _sessionBookmarks.removeWhere((b) => b.novelId == novelId);
     try {
       final res = await ApiClient.dio.delete('/bookmarks/$novelId');
       return res.data['success'] == true;
-    } on DioException catch (_) {
-      return true;
     } catch (_) {
       return true;
     }
   }
 }
-

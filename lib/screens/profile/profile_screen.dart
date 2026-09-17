@@ -447,8 +447,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-
-
+              const SizedBox(height: 24),
+              const Text(
+                'เกี่ยวกับแอปพลิเคชัน & ชุมชน',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Card(
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.forum_outlined, color: Color(0xFF5865F2)),
+                      title: const Text('เข้าร่วม Discord Rels Reading Community', style: TextStyle(fontSize: 14)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
+                      onTap: () => launchUrlString('https://discord.gg/relsreading'),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.language_rounded, color: Color(0xFF1877F2)),
+                      title: const Text('เข้าร่วม Facebook Community', style: TextStyle(fontSize: 14)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
+                      onTap: () => launchUrlString('https://facebook.com/relsreading'),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 28),
 
               // Logout Button (if logged in)

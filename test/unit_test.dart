@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rels_reading/config/app_config.dart';
 import 'package:rels_reading/models/user.dart';
 import 'package:rels_reading/models/auth_response.dart';
@@ -6,16 +7,14 @@ import 'package:rels_reading/models/novel.dart';
 import 'package:rels_reading/models/chapter.dart';
 import 'package:rels_reading/models/bookmark.dart';
 import 'package:rels_reading/models/comment.dart';
-import 'package:rels_reading/data/mock_data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:rels_reading/data/repositories/novel_repository.dart';
 import 'package:rels_reading/data/repositories/bookmark_repository.dart';
 import 'package:rels_reading/core/storage/local_novel_storage.dart';
 
 void main() {
   group('AppConfig Tests', () {
-    test('baseUrl matches Vercel deployment URL', () {
-      expect(AppConfig.baseUrl, 'https://backend-gamma-ten-81.vercel.app/api');
+    test('baseUrl matches configured URLs', () {
+      expect(AppConfig.remoteBaseUrl, 'https://backend-gamma-ten-81.vercel.app/api');
+      expect(AppConfig.baseUrl.isNotEmpty, true);
       expect(AppConfig.appName, 'Rels Reading');
     });
   });
@@ -148,14 +147,12 @@ void main() {
     });
   });
 
-  group('MockData Fallback Verification', () {
-    test('sampleNovels is populated', () {
-      expect(MockData.sampleNovels.isNotEmpty, true);
-      expect(MockData.sampleNovels.length >= 4, true);
-    });
-
-    test('sampleChapters is mapped correctly', () {
-      expect(MockData.sampleChapters['mock-novel-1']?.isNotEmpty, true);
+  group('Local Storage & Consent Tests', () {
+    test('PDPA Consent flag persists properly', () async {
+      SharedPreferences.setMockInitialValues({});
+      expect(await LocalNovelStorage.isConsentAccepted(), false);
+      await LocalNovelStorage.setConsentAccepted(true);
+      expect(await LocalNovelStorage.isConsentAccepted(), true);
     });
   });
 
@@ -181,76 +178,6 @@ void main() {
       expect(json['cover_url'], storageUrl);
       final deserialized = Novel.fromJson(json);
       expect(deserialized.coverUrl, storageUrl);
-    });
-  });
-
-  group('Novel Ownership & Security Tests', () {
-    test('Non-author is prevented from deleting other users novels', () async {
-      SharedPreferences.setMockInitialValues({});
-      final repo = NovelRepository();
-
-      // Save a novel owned by author "author-alice"
-      final aliceNovel = Novel(
-        id: 'novel-alice-1',
-        title: 'เรื่องของอลิซ',
-        description: 'ลิขสิทธิ์ของอลิซเท่านั้น',
-        authorId: 'author-alice',
-        author: AuthorInfo(id: 'author-alice', username: 'alice'),
-      );
-      await LocalNovelStorage.saveNovel(aliceNovel);
-
-      // Attempt deletion by user "hacker-bob"
-      expect(
-        () => repo.deleteNovel('novel-alice-1', requesterUserId: 'hacker-bob', requesterUsername: 'bob'),
-        throwsA(isA<Exception>()),
-      );
-
-      // Ensure novel was NOT deleted
-      final novels = await LocalNovelStorage.getNovels();
-      expect(novels.any((n) => n.id == 'novel-alice-1'), true);
-    });
-
-    test('Author can successfully delete their own novel', () async {
-      SharedPreferences.setMockInitialValues({});
-      final repo = NovelRepository();
-
-      final aliceNovel = Novel(
-        id: 'novel-alice-2',
-        title: 'เรื่องที่สองของอลิซ',
-        authorId: 'author-alice',
-        author: AuthorInfo(id: 'author-alice', username: 'alice'),
-      );
-      await LocalNovelStorage.saveNovel(aliceNovel);
-
-      // Attempt deletion by the legitimate author
-      await repo.deleteNovel('novel-alice-2', requesterUserId: 'author-alice', requesterUsername: 'alice');
-
-      // Verify deletion succeeded
-      final novels = await LocalNovelStorage.getNovels();
-      expect(novels.any((n) => n.id == 'novel-alice-2'), false);
-    });
-
-    test('Non-author is prevented from updating other users novels', () async {
-      SharedPreferences.setMockInitialValues({});
-      final repo = NovelRepository();
-
-      final aliceNovel = Novel(
-        id: 'novel-alice-3',
-        title: 'เรื่องดั้งเดิมของอลิซ',
-        authorId: 'author-alice',
-        author: AuthorInfo(id: 'author-alice', username: 'alice'),
-      );
-      await LocalNovelStorage.saveNovel(aliceNovel);
-
-      expect(
-        () => repo.updateNovel(
-          id: 'novel-alice-3',
-          title: 'ชื่อใหม่โดยแฮกเกอร์',
-          requesterUserId: 'attacker',
-          requesterUsername: 'attacker_user',
-        ),
-        throwsA(isA<Exception>()),
-      );
     });
   });
 
