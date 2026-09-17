@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_logo.dart';
 import '../../core/utils/google_sign_in_button/google_sign_in_button.dart';
 import '../../core/storage/local_novel_storage.dart';
 import '../../providers/auth_provider.dart';
@@ -346,21 +347,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Icon
-                  Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withOpacity(0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.lock_outline_rounded,
-                        size: 40,
-                        color: AppTheme.primary,
-                      ),
-                    ),
+                  // Official App Logo
+                  const Center(
+                    child: AppLogo(size: 84, showGlow: true),
                   ),
                   const SizedBox(height: 24),
                   const Text(

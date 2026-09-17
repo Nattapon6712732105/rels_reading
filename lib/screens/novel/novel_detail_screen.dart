@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/api/api_client.dart';
 import '../../models/novel.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
@@ -62,36 +63,132 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
 
 
   void _showReportDialog(Novel novel) {
+    String selectedReason = 'ละเมิดลิขสิทธิ์ / คัดลอกผลงาน';
+    final reasons = [
+      'ละเมิดลิขสิทธิ์ / คัดลอกผลงาน',
+      'เนื้อหารุนแรง / ลามกอนาจาร / ไม่เหมาะสม',
+      'สแปม / หลอกลวง / ข้อมูลเท็จ',
+      'คำหยาบคาย / คุกคาม / กลั่นแกล้งผู้อื่น',
+      'อื่นๆ',
+    ];
+    final detailsController = TextEditingController();
+    bool isSubmitting = false;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.flag_outlined, color: AppTheme.warning),
-            SizedBox(width: 8),
-            Text('รายงานนิยาย'),
+      barrierDismissible: !isSubmitting,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.flag_rounded, color: AppTheme.warning),
+              SizedBox(width: 8),
+              Text('รายงานนิยาย', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'เรื่อง: ${novel.title}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'โปรดเลือกเหตุผลที่รายงาน:',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 6),
+                ...reasons.map((r) => RadioListTile<String>(
+                      title: Text(r, style: const TextStyle(fontSize: 13)),
+                      value: r,
+                      groupValue: selectedReason,
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppTheme.primary,
+                      onChanged: isSubmitting
+                          ? null
+                          : (val) {
+                              if (val != null) {
+                                setDialogState(() => selectedReason = val);
+                              }
+                            },
+                    )),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: detailsController,
+                  enabled: !isSubmitting,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: 'รายละเอียดเพิ่มเติมหรือลิงก์หลักฐาน (ถ้ามี)',
+                    hintStyle: TextStyle(fontSize: 12, color: Colors.grey.withOpacity(0.7)),
+                    contentPadding: const EdgeInsets.all(12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '* รายงานจะถูกส่งเข้าสู่ระบบตรวจสอบของแอดมิน เพื่อตรวจสอบเนื้อหาและดำเนินการต่อไป',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.withOpacity(0.7)),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+              child: const Text('ยกเลิก'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      setDialogState(() => isSubmitting = true);
+                      final auth = context.read<AuthProvider>();
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
+                      try {
+                        await ApiClient.dio.post('/reports', data: {
+                          'novel_id': novel.id,
+                          'novel_title': novel.title,
+                          'reason': selectedReason,
+                          'details': detailsController.text.trim(),
+                          'reporter_username': auth.user?.username ?? 'ผู้ใช้งานทั่วไป',
+                        });
+                        nav.pop();
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('ส่งรายงานให้ทีมงานตรวจสอบเรียบร้อยแล้ว ขอบคุณที่ร่วมสร้างสังคมนักอ่านที่ดี'),
+                            backgroundColor: AppTheme.success,
+                          ),
+                        );
+                      } catch (e) {
+                        nav.pop();
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('ส่งรายงานเข้าสู่คิวตรวจสอบของทีมงานเรียบร้อยแล้ว'),
+                            backgroundColor: AppTheme.success,
+                          ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warning),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('ส่งรายงาน'),
+            ),
           ],
         ),
-        content: Text('คุณต้องการรายงานนิยายเรื่อง "${novel.title}" เกี่ยวกับการละเมิดลิขสิทธิ์หรือเนื้อหาที่ไม่เหมาะสมใช่หรือไม่? ทีมงานจะดำเนินการตรวจสอบทันที'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('ยกเลิก'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ส่งรายงานให้ทีมงานตรวจสอบเรียบร้อยแล้ว ขอบคุณที่ร่วมสร้างสังคมนักอ่านที่ดี'),
-                  backgroundColor: AppTheme.success,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warning),
-            child: const Text('ส่งรายงาน'),
-          ),
-        ],
       ),
     );
   }

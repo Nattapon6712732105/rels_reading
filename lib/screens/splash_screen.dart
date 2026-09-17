@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/app_logo.dart';
 import '../providers/auth_provider.dart';
 import '../providers/novel_provider.dart';
 import '../providers/bookmark_provider.dart';
@@ -80,32 +81,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Glowing app icon container
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.primary, Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primary.withOpacity(0.4),
-                        blurRadius: 30,
-                        spreadRadius: 4,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.auto_stories_rounded,
-                    size: 52,
-                    color: Colors.white,
-                  ),
-                ),
+                // Official glowing app logo
+                const AppLogo(size: 110, showGlow: true),
                 const SizedBox(height: 28),
                 Text(
                   AppConfig.appName,

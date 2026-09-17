@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/app_logo.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/novel_provider.dart';
 import '../../providers/bookmark_provider.dart';
@@ -81,19 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: Row(
                 children: [
                   // Logo
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppTheme.primary, AppTheme.accent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.auto_stories_rounded, color: Colors.white, size: 18),
-                  ),
+                  const AppLogo(size: 32, showGlow: false, borderRadius: 9),
                   const SizedBox(width: 10),
                   const Text(
                     'Rels Reading',

@@ -102,6 +102,34 @@ class _ReaderScreenState extends State<ReaderScreen> {
         backgroundColor: settings.backgroundColor,
         foregroundColor: settings.textColor,
         elevation: 0,
+        iconTheme: IconThemeData(color: settings.textColor),
+        actionsIconTheme: IconThemeData(color: settings.textColor),
+        shape: Border(
+          bottom: BorderSide(
+            color: settings.textColor.withOpacity(0.08),
+            width: 1,
+          ),
+        ),
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: settings.textColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: settings.textColor.withOpacity(0.15),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: settings.textColor,
+            ),
+          ),
+          tooltip: 'ย้อนกลับ',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -130,19 +158,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
         actions: [
           // Table of Contents Button (Chapter Selector Bottom Sheet)
           IconButton(
-            icon: const Icon(Icons.format_list_bulleted_rounded),
+            icon: Icon(Icons.format_list_bulleted_rounded, color: settings.textColor),
             tooltip: 'สารบัญตอน',
             onPressed: _showChapterSelectorSheet,
           ),
           // Comments Button
           IconButton(
-            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            icon: Icon(Icons.chat_bubble_outline_rounded, color: settings.textColor),
             tooltip: 'ความคิดเห็น',
             onPressed: _showCommentsSheet,
           ),
           // Reader Settings Button
           IconButton(
-            icon: const Icon(Icons.format_size_rounded),
+            icon: Icon(Icons.format_size_rounded, color: settings.textColor),
             tooltip: 'ปรับแต่งการอ่าน',
             onPressed: _showSettingsSheet,
           ),
