@@ -9,6 +9,8 @@ import '../../providers/bookmark_provider.dart';
 import '../reader/reader_screen.dart';
 import '../main_nav_screen.dart';
 import 'create_chapter_screen.dart';
+import 'author_profile_screen.dart';
+import 'author_dashboard_screen.dart';
 
 class NovelDetailScreen extends StatefulWidget {
   final String novelId;
@@ -599,43 +601,85 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                   // Author & Stats
                   Row(
                     children: [
-                      const CircleAvatar(
-                        radius: 12,
-                        backgroundColor: AppTheme.primary,
-                        child: Icon(Icons.person, size: 14, color: Colors.white),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        novel?.displayAuthorName ?? 'นักเขียน',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.primary,
+                      InkWell(
+                        onTap: () {
+                          if (novel != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AuthorProfileScreen(
+                                  authorId: novel.authorId,
+                                  authorName: novel.displayAuthorName,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 13,
+                                backgroundColor: AppTheme.primary,
+                                child: Text(
+                                  novel?.displayAuthorName.isNotEmpty == true
+                                      ? novel!.displayAuthorName[0].toUpperCase()
+                                      : 'W',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                novel?.displayAuthorName ?? 'นักเขียน',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppTheme.primary),
+                            ],
+                          ),
                         ),
                       ),
                       if (isAuthor) ...[
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.edit_rounded, size: 10, color: AppTheme.primary),
-                              SizedBox(width: 3),
-                              Text(
-                                'ผลงานของคุณ',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primary,
-                                ),
+                        InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AuthorDashboardScreen(),
                               ),
-                            ],
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppTheme.primary.withOpacity(0.35)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.dashboard_rounded, size: 11, color: AppTheme.primary),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Author Studio',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],

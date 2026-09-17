@@ -5,7 +5,7 @@ import '../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import 'home/home_screen.dart';
 import 'missions/missions_screen.dart';
-import 'novel/create_novel_screen.dart';
+import 'novel/author_dashboard_screen.dart';
 import 'community/community_screen.dart';
 import 'profile/profile_screen.dart';
 
@@ -41,8 +41,8 @@ class _MainNavScreenState extends State<MainNavScreen> {
     final screens = [
       const HomeScreen(),
       const MissionsScreen(),
-      CreateNovelScreen(
-        onCancel: () => _switchTab(0),
+      AuthorDashboardScreen(
+        onBackToHome: () => _switchTab(0),
       ),
       const CommunityScreen(),
       const ProfileScreen(),

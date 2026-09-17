@@ -46,13 +46,17 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BookmarkProvider()),
         ChangeNotifierProvider(create: (_) => ReaderSettingsProvider()),
       ],
-      child: MaterialApp(
-        title: AppConfig.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark, // Default to dark mode for novel reading aesthetic
-        home: const SplashScreen(),
+      child: Consumer<ReaderSettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            title: AppConfig.appName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: settings.appThemeMode,
+            home: const SplashScreen(),
+          );
+        },
       ),
     );
   }

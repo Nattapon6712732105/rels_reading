@@ -164,7 +164,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         child: Text(
                           _currentChapter.title,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: settings.getReaderTextStyle(
                             fontSize: settings.fontSize + 4,
                             fontWeight: FontWeight.bold,
                             color: settings.textColor,
@@ -183,7 +183,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         _chapterContent.isNotEmpty
                             ? _chapterContent.trim()
                             : 'ไม่มีเนื้อหาในตอนนี้',
-                        style: TextStyle(
+                        style: settings.getReaderTextStyle(
                           fontSize: settings.fontSize,
                           color: settings.textColor,
                           height: settings.lineHeight,
@@ -284,11 +284,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       color: settings.textColor,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Theme Selector
+                  // Theme Selector (5 themes)
                   Text(
-                    'โทนสีพื้นหลัง',
+                    'โทนสีพื้นหลังการอ่าน',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -296,49 +296,125 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      _buildThemeChoice(
-                        title: 'สว่าง',
-                        mode: ReaderThemeMode.light,
-                        bg: AppTheme.readerLightBg,
-                        border: Colors.grey.shade400,
-                        textColor: Colors.black,
-                        settings: settings,
-                        onTap: () {
-                          settings.setThemeMode(ReaderThemeMode.light);
-                          setModalState(() {});
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      _buildThemeChoice(
-                        title: 'ซีเปีย',
-                        mode: ReaderThemeMode.sepia,
-                        bg: AppTheme.readerSepiaBg,
-                        border: const Color(0xFFD4C3A3),
-                        textColor: const Color(0xFF4A3E30),
-                        settings: settings,
-                        onTap: () {
-                          settings.setThemeMode(ReaderThemeMode.sepia);
-                          setModalState(() {});
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      _buildThemeChoice(
-                        title: 'กลางคืน',
-                        mode: ReaderThemeMode.dark,
-                        bg: AppTheme.readerDarkBg,
-                        border: const Color(0xFF2D3748),
-                        textColor: Colors.white,
-                        settings: settings,
-                        onTap: () {
-                          settings.setThemeMode(ReaderThemeMode.dark);
-                          setModalState(() {});
-                        },
-                      ),
-                    ],
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildThemeChoice(
+                          title: 'สว่าง',
+                          mode: ReaderThemeMode.light,
+                          bg: AppTheme.readerLightBg,
+                          border: Colors.grey.shade400,
+                          textColor: Colors.black,
+                          settings: settings,
+                          onTap: () {
+                            settings.setThemeMode(ReaderThemeMode.light);
+                            setModalState(() {});
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeChoice(
+                          title: 'ซีเปีย',
+                          mode: ReaderThemeMode.sepia,
+                          bg: AppTheme.readerSepiaBg,
+                          border: const Color(0xFFD4C3A3),
+                          textColor: const Color(0xFF4A3E30),
+                          settings: settings,
+                          onTap: () {
+                            settings.setThemeMode(ReaderThemeMode.sepia);
+                            setModalState(() {});
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeChoice(
+                          title: 'ครีม',
+                          mode: ReaderThemeMode.cream,
+                          bg: AppTheme.readerCreamBg,
+                          border: const Color(0xFFE2DAC8),
+                          textColor: const Color(0xFF2D2A26),
+                          settings: settings,
+                          onTap: () {
+                            settings.setThemeMode(ReaderThemeMode.cream);
+                            setModalState(() {});
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeChoice(
+                          title: 'โหมดมืด',
+                          mode: ReaderThemeMode.dark,
+                          bg: AppTheme.readerDarkBg,
+                          border: const Color(0xFF2D3748),
+                          textColor: Colors.white,
+                          settings: settings,
+                          onTap: () {
+                            settings.setThemeMode(ReaderThemeMode.dark);
+                            setModalState(() {});
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeChoice(
+                          title: 'OLED ดำ',
+                          mode: ReaderThemeMode.night,
+                          bg: AppTheme.readerNightBg,
+                          border: const Color(0xFF3F3F46),
+                          textColor: const Color(0xFFD4D4D8),
+                          settings: settings,
+                          onTap: () {
+                            settings.setThemeMode(ReaderThemeMode.night);
+                            setModalState(() {});
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
+
+                  const SizedBox(height: 20),
+
+                  // Font Family Selector
+                  Text(
+                    'แบบตัวอักษร (Font Family)',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: settings.textColor.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: ReaderSettingsProvider.availableFonts.map((font) {
+                        final isSelected = settings.readerFontFamily == font;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(
+                              font,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : settings.textColor,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                fontSize: 12,
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: AppTheme.primary,
+                            backgroundColor: settings.backgroundColor == AppTheme.readerDarkBg ||
+                                    settings.backgroundColor == AppTheme.readerNightBg
+                                ? const Color(0xFF22232E)
+                                : Colors.black.withOpacity(0.06),
+                            onSelected: (selected) {
+                              if (selected) {
+                                settings.setReaderFontFamily(font);
+                                setModalState(() {});
+                              }
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
 
                   // Font Size Slider
                   Row(
@@ -361,16 +437,42 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       ),
                     ],
                   ),
-                  Slider(
-                    value: settings.fontSize,
-                    min: 14.0,
-                    max: 28.0,
-                    divisions: 7,
-                    activeColor: AppTheme.primary,
-                    onChanged: (val) {
-                      settings.setFontSize(val);
-                      setModalState(() {});
-                    },
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline_rounded),
+                        color: settings.textColor,
+                        onPressed: settings.fontSize > 14
+                            ? () {
+                                settings.setFontSize(settings.fontSize - 1);
+                                setModalState(() {});
+                              }
+                            : null,
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: settings.fontSize,
+                          min: 14.0,
+                          max: 32.0,
+                          divisions: 18,
+                          activeColor: AppTheme.primary,
+                          onChanged: (val) {
+                            settings.setFontSize(val);
+                            setModalState(() {});
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline_rounded),
+                        color: settings.textColor,
+                        onPressed: settings.fontSize < 32
+                            ? () {
+                                settings.setFontSize(settings.fontSize + 1);
+                                setModalState(() {});
+                              }
+                            : null,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -391,29 +493,49 @@ class _ReaderScreenState extends State<ReaderScreen> {
     required VoidCallback onTap,
   }) {
     final isSelected = settings.themeMode == mode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppTheme.primary : border,
-              width: isSelected ? 2.5 : 1,
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 78,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : border,
+            width: isSelected ? 2.5 : 1,
           ),
-          child: Center(
-            child: Text(
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'กข',
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
               title,
               style: TextStyle(
                 color: textColor,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
+                fontSize: 11,
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

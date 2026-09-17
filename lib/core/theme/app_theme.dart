@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 enum ReaderThemeMode {
   light,
   sepia,
+  cream,
   dark,
+  night,
 }
 
 class AppTheme {
@@ -24,8 +26,14 @@ class AppTheme {
   static const Color readerSepiaBg = Color(0xFFF7EEDD);
   static const Color readerSepiaText = Color(0xFF4A3E30);
 
+  static const Color readerCreamBg = Color(0xFFFAF7EE);
+  static const Color readerCreamText = Color(0xFF2D2A26);
+
   static const Color readerDarkBg = Color(0xFF121318);
   static const Color readerDarkText = Color(0xFFCBD5E1);
+
+  static const Color readerNightBg = Color(0xFF000000);
+  static const Color readerNightText = Color(0xFFD4D4D8);
 
   // App Themes (Dark as default for novel reading premium aesthetic)
   static ThemeData get darkTheme {
