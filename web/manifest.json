@@ -1,11 +1,11 @@
 {
-    "name": "rels_reading",
-    "short_name": "rels_reading",
+    "name": "Rel's Reading",
+    "short_name": "Rel's Reading",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0E0F14",
+    "theme_color": "#0E0F14",
+    "description": "Rel's Reading - Explore Magical Worlds",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

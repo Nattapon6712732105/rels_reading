@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/app_logo.dart';
 import '../providers/auth_provider.dart';
 import 'home/home_screen.dart';
 import 'missions/missions_screen.dart';
@@ -56,24 +57,8 @@ class _MainNavScreenState extends State<MainNavScreen> {
           elevation: 0,
           title: Row(
             children: [
-              // Logo icon with brand gradient
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primary, Color(0xFF00B4D8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.auto_stories_rounded,
-                  color: AppTheme.onPrimary,
-                  size: 20,
-                ),
-              ),
+              // Official App Logo
+              const AppLogo(size: 32, showGlow: false, borderRadius: 8),
               const SizedBox(width: 10),
               const Text(
                 'RELS READING',
