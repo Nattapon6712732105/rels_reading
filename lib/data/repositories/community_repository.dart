@@ -1,13 +1,31 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/api/api_client.dart';
 import '../../models/community_post.dart';
 
 class CommunityRepository {
-  static const String _storageKey = 'community_topics_v2';
+  static const String _storageKey = 'community_topics_v3';
+  static const String _cloudStorageUrl =
+      'https://usfntxkopzkgkvcaywdx.supabase.co/storage/v1/object/public/covers/community/topics.json';
 
   /// Default Seed Topics matching the screenshot and popular discussions
   List<DiscussionTopic> _getSeedTopics() {
     return [
+      DiscussionTopic(
+        id: 'topic_testsss',
+        title: 'testsss',
+        author: 'เทพไม่รวมกลุ่ม',
+        isAuthor: true,
+        category: 'พูดคุยนิยาย',
+        content: 'กระทู้พูดคุยและแลกเปลี่ยนความคิดเห็นเกี่ยวกับนิยายเรื่อง คนคุก และผลงานใหม่ๆ ครับ',
+        createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
+        viewsCount: 15,
+        likesCount: 0,
+        isLiked: false,
+        isPinned: false,
+        replies: [],
+      ),
       DiscussionTopic(
         id: 'topic-1',
         title: 'ห้องพูดคุยนักอ่าน: หวนคืนสู่บัลลังก์จอมราชันย์',
@@ -128,26 +146,94 @@ class CommunityRepository {
     ];
   }
 
-  /// Get all topics (from SharedPreferences or seed default)
-  Future<List<DiscussionTopic>> getTopics() async {
+  /// Read local cached topics
+  Future<List<DiscussionTopic>> _getLocalTopics() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonStr = prefs.getString(_storageKey);
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final List<dynamic> list = jsonDecode(jsonStr);
+        return list.map((e) => DiscussionTopic.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Merge remote and local topics to preserve newly created items
+  List<DiscussionTopic> _mergeTopics(List<DiscussionTopic> remote, List<DiscussionTopic> local) {
+    final Map<String, DiscussionTopic> map = {};
+    for (final t in remote) {
+      map[t.id] = t;
+    }
+    for (final t in local) {
+      map[t.id] = t;
+    }
+    final list = map.values.toList();
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
+
+  /// Get all topics (Synced from Backend / Supabase Cloud Storage, with local cache fallback)
+  Future<List<DiscussionTopic>> getTopics() async {
+    final local = await _getLocalTopics();
+
+    // 1. Try Backend API
+    try {
+      final res = await ApiClient.dio.get(
+        '/community/topics',
+        options: Options(receiveTimeout: const Duration(seconds: 4)),
+      );
+      if (res.data['success'] == true && res.data['data'] is List) {
+        final List list = res.data['data'];
         final topics = list.map((e) => DiscussionTopic.fromJson(e as Map<String, dynamic>)).toList();
-        return topics;
+        if (topics.isNotEmpty) {
+          final merged = _mergeTopics(topics, local);
+          await _saveLocalTopics(merged);
+          return merged;
+        }
       }
     } catch (_) {}
 
-    // Fallback to initial seeds and persist
+    // 2. Try Public Supabase Cloud Storage
+    try {
+      final dio = Dio();
+      final res = await dio.get(
+        _cloudStorageUrl,
+        options: Options(receiveTimeout: const Duration(seconds: 4)),
+      );
+      if (res.data != null) {
+        List<dynamic> list;
+        if (res.data is List) {
+          list = res.data as List;
+        } else if (res.data is String) {
+          list = jsonDecode(res.data as String) as List;
+        } else {
+          list = [];
+        }
+
+        final topics = list.map((e) => DiscussionTopic.fromJson(e as Map<String, dynamic>)).toList();
+        if (topics.isNotEmpty) {
+          final merged = _mergeTopics(topics, local);
+          await _saveLocalTopics(merged);
+          return merged;
+        }
+      }
+    } catch (_) {}
+
+    // 3. Fallback to Local Storage
+    if (local.isNotEmpty) {
+      return local;
+    }
+
+    // 4. Default Seed Topics
     final seeds = _getSeedTopics();
-    await _saveTopics(seeds);
+    await _saveLocalTopics(seeds);
     return seeds;
+
   }
 
-  /// Save topics list to SharedPreferences
-  Future<void> _saveTopics(List<DiscussionTopic> topics) async {
+  /// Save topics list to local cache
+  Future<void> _saveLocalTopics(List<DiscussionTopic> topics) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonStr = jsonEncode(topics.map((t) => t.toJson()).toList());
@@ -174,24 +260,46 @@ class CommunityRepository {
     required String category,
     required String content,
   }) async {
-    final topics = await getTopics();
-    final newTopic = DiscussionTopic(
-      id: 'topic_${DateTime.now().millisecondsSinceEpoch}',
-      title: title.trim(),
-      author: author.trim().isNotEmpty ? author.trim() : 'นักอ่าน Rels',
-      authorAvatar: authorAvatar,
-      isAuthor: isAuthor,
-      category: category,
-      content: content.trim(),
-      createdAt: DateTime.now(),
-      viewsCount: 1,
-      likesCount: 0,
-      isLiked: false,
-      replies: [],
-    );
+    DiscussionTopic? createdFromBackend;
 
+    // 1. Try Backend API
+    try {
+      final res = await ApiClient.dio.post(
+        '/community/topics',
+        data: {
+          'title': title.trim(),
+          'author': author.trim(),
+          'author_avatar': authorAvatar,
+          'is_author': isAuthor,
+          'category': category,
+          'content': content.trim(),
+        },
+      );
+      if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
+        createdFromBackend = DiscussionTopic.fromJson(res.data['data'] as Map<String, dynamic>);
+      }
+    } catch (_) {}
+
+    final newTopic = createdFromBackend ??
+        DiscussionTopic(
+          id: 'topic_${DateTime.now().millisecondsSinceEpoch}',
+          title: title.trim(),
+          author: author.trim().isNotEmpty ? author.trim() : 'นักอ่าน Rels',
+          authorAvatar: authorAvatar,
+          isAuthor: isAuthor,
+          category: category,
+          content: content.trim(),
+          createdAt: DateTime.now(),
+          viewsCount: 1,
+          likesCount: 0,
+          isLiked: false,
+          replies: [],
+        );
+
+    final topics = await getTopics();
+    topics.removeWhere((t) => t.id == newTopic.id);
     topics.insert(0, newTopic);
-    await _saveTopics(topics);
+    await _saveLocalTopics(topics);
     return newTopic;
   }
 
@@ -203,30 +311,54 @@ class CommunityRepository {
     bool isAuthor = false,
     required String content,
   }) async {
+    DiscussionReply? replyFromBackend;
+
+    // 1. Try Backend API
+    try {
+      final res = await ApiClient.dio.post(
+        '/community/topics/$topicId/replies',
+        data: {
+          'author': author.trim(),
+          'author_avatar': authorAvatar,
+          'is_author': isAuthor,
+          'content': content.trim(),
+        },
+      );
+      if (res.data['success'] == true && res.data['data'] is Map<String, dynamic>) {
+        replyFromBackend = DiscussionReply.fromJson(res.data['data'] as Map<String, dynamic>);
+      }
+    } catch (_) {}
+
+    final newReply = replyFromBackend ??
+        DiscussionReply(
+          id: 'reply_${DateTime.now().millisecondsSinceEpoch}',
+          author: author.trim().isNotEmpty ? author.trim() : 'นักอ่าน Rels',
+          authorAvatar: authorAvatar,
+          isAuthor: isAuthor,
+          content: content.trim(),
+          createdAt: DateTime.now(),
+          likesCount: 0,
+          isLiked: false,
+        );
+
     final topics = await getTopics();
     final index = topics.indexWhere((t) => t.id == topicId);
-    if (index == -1) {
-      throw Exception('ไม่พบกระทู้ที่ระบุ');
+    if (index != -1) {
+      topics[index].replies.add(newReply);
+      await _saveLocalTopics(topics);
     }
 
-    final newReply = DiscussionReply(
-      id: 'reply_${DateTime.now().millisecondsSinceEpoch}',
-      author: author.trim().isNotEmpty ? author.trim() : 'นักอ่าน Rels',
-      authorAvatar: authorAvatar,
-      isAuthor: isAuthor,
-      content: content.trim(),
-      createdAt: DateTime.now(),
-      likesCount: 0,
-      isLiked: false,
-    );
-
-    topics[index].replies.add(newReply);
-    await _saveTopics(topics);
     return newReply;
   }
 
   /// Toggle like on a topic
   Future<bool> toggleLikeTopic(String topicId) async {
+    // 1. Try Backend API
+    try {
+      await ApiClient.dio.post('/community/topics/$topicId/like');
+    } catch (_) {}
+
+
     final topics = await getTopics();
     final index = topics.indexWhere((t) => t.id == topicId);
     if (index == -1) return false;
@@ -237,7 +369,7 @@ class CommunityRepository {
     topic.likesCount += newLiked ? 1 : -1;
     if (topic.likesCount < 0) topic.likesCount = 0;
 
-    await _saveTopics(topics);
+    await _saveLocalTopics(topics);
     return newLiked;
   }
 
@@ -256,7 +388,7 @@ class CommunityRepository {
     reply.likesCount += newLiked ? 1 : -1;
     if (reply.likesCount < 0) reply.likesCount = 0;
 
-    await _saveTopics(topics);
+    await _saveLocalTopics(topics);
     return newLiked;
   }
 }

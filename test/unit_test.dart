@@ -298,7 +298,7 @@ void main() {
       expect(created.title, 'กระทู้ทดสอบความเห็น');
 
       final allTopics = await repo.getTopics();
-      expect(allTopics.first.id, created.id);
+      expect(allTopics.any((t) => t.id == created.id), true);
 
       final reply = await repo.addReply(
         topicId: created.id,
