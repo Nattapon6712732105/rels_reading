@@ -7,9 +7,11 @@ import '../providers/auth_provider.dart';
 import '../providers/novel_provider.dart';
 import '../providers/bookmark_provider.dart';
 import 'main_nav_screen.dart';
+import 'novel/novel_detail_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final String? targetRoute;
+  const SplashScreen({super.key, this.targetRoute});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -63,10 +65,62 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     if (!mounted) return;
 
+    if (widget.targetRoute != null && widget.targetRoute != '/' && widget.targetRoute!.isNotEmpty) {
+      final uri = Uri.tryParse(widget.targetRoute!);
+      final segments = uri?.pathSegments ?? [];
+
+      // /novels/:id or /novel/:id
+      if (segments.length >= 2 && (segments[0] == 'novels' || segments[0] == 'novel')) {
+        final novelId = segments[1];
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => NovelDetailScreen(novelId: novelId)),
+        );
+        return;
+      }
+
+      // /community or /notifications
+      if (segments.isNotEmpty && (segments[0] == 'community' || segments[0] == 'notifications')) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavScreen(initialIndex: 3)),
+        );
+        return;
+      }
+
+      // /missions
+      if (segments.isNotEmpty && segments[0] == 'missions') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavScreen(initialIndex: 1)),
+        );
+        return;
+      }
+
+      // /author or /dashboard
+      if (segments.isNotEmpty && (segments[0] == 'author' || segments[0] == 'dashboard')) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavScreen(initialIndex: 2)),
+        );
+        return;
+      }
+
+      // /profile
+      if (segments.isNotEmpty && segments[0] == 'profile') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavScreen(initialIndex: 4)),
+        );
+        return;
+      }
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const MainNavScreen()),
     );
+
   }
 
   @override

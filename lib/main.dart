@@ -54,7 +54,12 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: settings.appThemeMode,
-            home: const SplashScreen(),
+            onGenerateRoute: (routeSettings) {
+              return MaterialPageRoute(
+                builder: (_) => SplashScreen(targetRoute: routeSettings.name),
+                settings: routeSettings,
+              );
+            },
           );
         },
       ),
