@@ -26,8 +26,14 @@ class AppConfig {
   static const String googleClientId =
       '267211717334-bg6su72vc71oaaenjspuhtoq5gmfdrf6.apps.googleusercontent.com';
 
-  /// LINE Official Account URL
-  static const String lineOaUrl = 'https://line.me/R/ti/p/@relsreading';
+  /// LINE Official Account URL (official shortlink from LINE OA: https://lin.ee/9ENF0Wl -> @855szpwc)
+  static const String lineOaUrl = 'https://lin.ee/9ENF0Wl';
+
+  /// LINE Official Account Basic ID
+  static const String lineOaBasicId = '@855szpwc';
+
+  /// LINE Official Account QR Code Asset
+  static const String lineOaQrAsset = 'assets/images/line_oa_qr.png';
 
   /// App Name & Tagline
   static const String appName = 'Rels Reading';

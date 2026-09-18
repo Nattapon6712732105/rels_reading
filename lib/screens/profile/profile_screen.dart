@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import '../../config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/storage/local_novel_storage.dart';
 import '../../providers/auth_provider.dart';
@@ -1357,7 +1358,7 @@ class _LineLinkDialogState extends State<_LineLinkDialog> {
   }
 
   Future<void> _openLineApp() async {
-    final url = _addFriendUrl ?? 'https://line.me/R/ti/p/@855szpwc';
+    final url = _addFriendUrl ?? AppConfig.lineOaUrl;
     try {
       final canLaunch = await canLaunchUrlString(url);
       if (canLaunch) {
@@ -1545,17 +1546,30 @@ class _LineLinkDialogState extends State<_LineLinkDialog> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            _qrCodeUrl!,
+                          child: Image.asset(
+                            AppConfig.lineOaQrAsset,
                             width: 160,
                             height: 160,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 160,
-                              height: 160,
-                              color: Colors.grey.shade200,
-                              child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
-                            ),
+                            errorBuilder: (_, __, ___) => _qrCodeUrl != null
+                                ? Image.network(
+                                    _qrCodeUrl!,
+                                    width: 160,
+                                    height: 160,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 160,
+                                      height: 160,
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 160,
+                                    height: 160,
+                                    color: Colors.grey.shade200,
+                                    child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                                  ),
                           ),
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../config/app_config.dart';
 import '../../core/api/api_client.dart';
 import '../../models/auth_response.dart';
 import '../../models/user.dart';
@@ -226,16 +227,16 @@ class AuthRepository {
         return res.data['data'] as Map<String, dynamic>;
       }
       return {
-        'botBasicId': '@855szpwc',
+        'botBasicId': AppConfig.lineOaBasicId,
         'displayName': 'rels reading',
-        'addFriendUrl': 'https://line.me/R/ti/p/@855szpwc',
+        'addFriendUrl': AppConfig.lineOaUrl,
         'qrCodeUrl': 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://line.me/R/ti/p/@855szpwc',
       };
     } catch (_) {
       return {
-        'botBasicId': '@855szpwc',
+        'botBasicId': AppConfig.lineOaBasicId,
         'displayName': 'rels reading',
-        'addFriendUrl': 'https://line.me/R/ti/p/@855szpwc',
+        'addFriendUrl': AppConfig.lineOaUrl,
         'qrCodeUrl': 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://line.me/R/ti/p/@855szpwc',
       };
     }
