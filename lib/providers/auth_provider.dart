@@ -242,6 +242,11 @@ class AuthProvider extends ChangeNotifier {
     return await _repo.createLineLinkCode();
   }
 
+  /// Send test notification to user's linked LINE OA account
+  Future<bool> sendTestLineNotification() async {
+    return await _repo.sendTestLineNotification();
+  }
+
   /// Link LINE User ID to current user account
   Future<bool> linkLineAccount(String lineUserId) async {
     _isLoading = true;

@@ -7,6 +7,9 @@ import 'package:rels_reading/models/novel.dart';
 import 'package:rels_reading/models/chapter.dart';
 import 'package:rels_reading/models/bookmark.dart';
 import 'package:rels_reading/models/comment.dart';
+import 'package:rels_reading/models/app_notification.dart';
+import 'package:rels_reading/models/community_post.dart';
+import 'package:rels_reading/data/repositories/community_repository.dart';
 import 'package:rels_reading/data/repositories/bookmark_repository.dart';
 import 'package:rels_reading/core/storage/local_novel_storage.dart';
 
@@ -214,6 +217,106 @@ void main() {
       expect(bookmarks.isEmpty, true);
     });
   });
+
+  group('Notifications & Community Tests', () {
+    test('AppNotification fromJson and toJson work correctly', () {
+      final json = {
+        'id': 'notif-1',
+        'title': '🔔 ตอนใหม่มาแล้ว! คนคุก',
+        'message': 'ตอนที่ 3: คุก3 อัปเดตแล้ว',
+        'type': 'chapter',
+        'image_url': 'https://example.com/cover.jpg',
+        'novel_id': '72e0c3e7-2b3f-4a86-9ace-99230d553196',
+        'chapter_number': 3,
+        'author_name': 'เทพไม่รวมกลุ่ม',
+        'created_at': '2026-09-18T11:19:02.000Z',
+        'is_read': false,
+      };
+
+      final notif = AppNotification.fromJson(json);
+      expect(notif.id, 'notif-1');
+      expect(notif.title, contains('คนคุก'));
+      expect(notif.type, NotificationType.chapter);
+      expect(notif.chapterNumber, 3);
+      expect(notif.isRead, false);
+
+      final exported = notif.toJson();
+      expect(exported['type'], 'chapter');
+      expect(exported['novel_id'], '72e0c3e7-2b3f-4a86-9ace-99230d553196');
+
+      final readNotif = notif.copyWith(isRead: true);
+      expect(readNotif.isRead, true);
+    });
+
+    test('DiscussionTopic and DiscussionReply serialize properly', () {
+      final reply = DiscussionReply(
+        id: 'rep-1',
+        author: 'พยัคฆ์ทมิฬคำราม',
+        isAuthor: true,
+        content: 'ขอบคุณที่ติดตามครับ',
+        createdAt: DateTime.now(),
+        likesCount: 5,
+        isLiked: true,
+      );
+
+      final topic = DiscussionTopic(
+        id: 'top-1',
+        title: 'ห้องพูดคุยนักอ่าน: หวนคืนสู่บัลลังก์จอมราชันย์',
+        author: 'หลินเฟิ่งแฟนคลับ',
+        category: 'พูดคุยนิยาย',
+        content: 'เนื้อเรื่องสนุกมาก',
+        createdAt: DateTime.now(),
+        viewsCount: 100,
+        likesCount: 25,
+        replies: [reply],
+      );
+
+      expect(topic.repliesCount, 1);
+      final json = topic.toJson();
+      expect(json['title'], 'ห้องพูดคุยนักอ่าน: หวนคืนสู่บัลลังก์จอมราชันย์');
+      expect((json['replies'] as List).length, 1);
+
+      final restored = DiscussionTopic.fromJson(json);
+      expect(restored.id, 'top-1');
+      expect(restored.replies.first.content, 'ขอบคุณที่ติดตามครับ');
+      expect(restored.replies.first.isAuthor, true);
+    });
+
+    test('CommunityRepository createTopic, addReply, and toggleLike work', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repo = CommunityRepository();
+
+      final topics = await repo.getTopics();
+      expect(topics.isNotEmpty, true);
+
+      final created = await repo.createTopic(
+        title: 'กระทู้ทดสอบความเห็น',
+        author: 'นักทดสอบ',
+        category: 'ทั่วไป',
+        content: 'ทดสอบเนื้อหากระทู้ใหม่ในระบบคอมมูนิตี้',
+      );
+      expect(created.title, 'กระทู้ทดสอบความเห็น');
+
+      final allTopics = await repo.getTopics();
+      expect(allTopics.first.id, created.id);
+
+      final reply = await repo.addReply(
+        topicId: created.id,
+        author: 'ผู้ตอบ',
+        content: 'เห็นด้วยกับหัวข้อนี้ครับ',
+      );
+      expect(reply.content, 'เห็นด้วยกับหัวข้อนี้ครับ');
+
+      final liked = await repo.toggleLikeTopic(created.id);
+      expect(liked, true);
+
+      final updated = await repo.getTopicById(created.id);
+      expect(updated?.isLiked, true);
+      expect(updated?.likesCount, 1);
+      expect(updated?.repliesCount, 1);
+    });
+  });
 }
+
 
 

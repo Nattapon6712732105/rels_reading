@@ -255,4 +255,18 @@ class AuthRepository {
       throw Exception(msg);
     }
   }
+
+  /// Send test notification to user's linked LINE OA account
+  Future<bool> sendTestLineNotification() async {
+    try {
+      final res = await ApiClient.dio.post('/line/test-notification');
+      return res.data['success'] == true;
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message ?? 'ไม่สามารถส่งการแจ้งเตือนทดสอบได้';
+      throw Exception(msg);
+    } catch (e) {
+      throw Exception('เกิดข้อผิดพลาดในการส่งแจ้งเตือนทดสอบ: $e');
+    }
+  }
 }
+
