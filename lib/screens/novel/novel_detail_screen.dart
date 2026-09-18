@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -23,12 +24,26 @@ class NovelDetailScreen extends StatefulWidget {
 }
 
 class _NovelDetailScreenState extends State<NovelDetailScreen> {
+  Map<String, dynamic>? _reportStatus;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NovelProvider>().loadNovelDetails(widget.novelId);
+      _fetchReportStatus();
     });
+  }
+
+  Future<void> _fetchReportStatus() async {
+    try {
+      final res = await ApiClient.dio.get('/reports/status/${widget.novelId}');
+      if (res.data['success'] == true && mounted) {
+        setState(() {
+          _reportStatus = res.data['data'] as Map<String, dynamic>?;
+        });
+      }
+    } catch (_) {}
   }
 
   void _handleBack() {
@@ -52,8 +67,13 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     }
 
     // Username match
-    if (currentUser.username.isNotEmpty && novel.author?.username.isNotEmpty == true) {
-      if (currentUser.username.trim().toLowerCase() == novel.author!.username.trim().toLowerCase()) {
+    if (currentUser.username.isNotEmpty) {
+      if (novel.author?.username.isNotEmpty == true &&
+          currentUser.username.trim().toLowerCase() == novel.author!.username.trim().toLowerCase()) {
+        return true;
+      }
+      if (novel.displayAuthorName.isNotEmpty &&
+          currentUser.username.trim().toLowerCase() == novel.displayAuthorName.trim().toLowerCase()) {
         return true;
       }
     }
@@ -134,7 +154,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '* รายงานจะถูกส่งเข้าสู่ระบบตรวจสอบของแอดมิน เพื่อตรวจสอบเนื้อหาและดำเนินการต่อไป',
+                  '* การรายงานจะถูกบันทึกในระบบ หากมีผู้รายงานสะสมครบ 10 คน ระบบจะส่งแจ้งเตือนส่วนตัวทาง LINE OA ให้นักเขียนทำการตรวจสอบหรือยื่นอุทธรณ์ภายใน 3 วัน',
                   style: TextStyle(fontSize: 11, color: Colors.grey.withOpacity(0.7)),
                 ),
               ],
@@ -154,7 +174,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                       final messenger = ScaffoldMessenger.of(context);
                       final nav = Navigator.of(ctx);
                       try {
-                        await ApiClient.dio.post('/reports', data: {
+                        final res = await ApiClient.dio.post('/reports', data: {
                           'novel_id': novel.id,
                           'novel_title': novel.title,
                           'reason': selectedReason,
@@ -162,18 +182,29 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                           'reporter_username': auth.user?.username ?? 'ผู้ใช้งานทั่วไป',
                         });
                         nav.pop();
+                        final msg = res.data['message'] ?? 'ส่งรายงานเรียบร้อยแล้ว';
                         messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('ส่งรายงานให้ทีมงานตรวจสอบเรียบร้อยแล้ว ขอบคุณที่ร่วมสร้างสังคมนักอ่านที่ดี'),
+                          SnackBar(
+                            content: Text(msg),
                             backgroundColor: AppTheme.success,
+                          ),
+                        );
+                        _fetchReportStatus();
+                      } on DioException catch (e) {
+                        nav.pop();
+                        final msg = e.response?.data?['message'] ?? 'ส่งรายงานไม่สำเร็จ หรือคุณได้เคยรายงานนิยายเรื่องนี้แล้ว';
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(msg),
+                            backgroundColor: AppTheme.warning,
                           ),
                         );
                       } catch (e) {
                         nav.pop();
                         messenger.showSnackBar(
                           const SnackBar(
-                            content: Text('ส่งรายงานเข้าสู่คิวตรวจสอบของทีมงานเรียบร้อยแล้ว'),
-                            backgroundColor: AppTheme.success,
+                            content: Text('เกิดข้อผิดพลาดในการส่งรายงาน'),
+                            backgroundColor: AppTheme.error,
                           ),
                         );
                       }
@@ -186,6 +217,108 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('ส่งรายงาน'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAppealDialog(Novel novel) {
+    final controller = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.gavel_rounded, color: AppTheme.secondary),
+              SizedBox(width: 8),
+              Text('ยื่นอุทธรณ์ผลงาน', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'เรื่อง: ${novel.title}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'โปรดระบุคำชี้แจงหรือเหตุผลในการอุทธรณ์ (เช่น เนื้อหาเป็นผลงานสร้างสรรค์ของตนเอง ไม่ได้คัดลอก หรือได้แก้ไขข้อความที่ผิดกฎแล้ว):',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'กรอกคำชี้แจงเพื่อส่งให้ทีมงานตรวจสอบ...',
+                    hintStyle: TextStyle(fontSize: 12, color: Colors.grey.withOpacity(0.7)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+              child: const Text('ยกเลิก'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final reason = controller.text.trim();
+                      if (reason.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('กรุณาระบุคำชี้แจงในการอุทธรณ์')),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isSubmitting = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
+                      try {
+                        final res = await ApiClient.dio.post('/reports/appeal', data: {
+                          'novel_id': novel.id,
+                          'appeal_reason': reason,
+                        });
+                        nav.pop();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(res.data['message'] ?? 'ยื่นอุทธรณ์เรียบร้อยแล้ว'),
+                            backgroundColor: AppTheme.success,
+                          ),
+                        );
+                        _fetchReportStatus();
+                      } catch (e) {
+                        setDialogState(() => isSubmitting = false);
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('เกิดข้อผิดพลาดในการยื่นอุทธรณ์'),
+                            backgroundColor: AppTheme.error,
+                          ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondary),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('ส่งคำอุทธรณ์'),
             ),
           ],
         ),
@@ -826,6 +959,78 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                           ),
                         );
                       }).toList(),
+                    ),
+                  ],
+                  // Report Threshold Warning Banner
+                  if (_reportStatus != null && _reportStatus!['threshold_reached'] == true) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _reportStatus!['status'] == 'appealed'
+                            ? const Color(0xFF1E3A8A).withOpacity(0.2)
+                            : const Color(0xFF7F1D1D).withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _reportStatus!['status'] == 'appealed'
+                              ? const Color(0xFF3B82F6).withOpacity(0.5)
+                              : const Color(0xFFEF4444).withOpacity(0.5),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _reportStatus!['status'] == 'appealed'
+                                    ? Icons.shield_rounded
+                                    : Icons.warning_amber_rounded,
+                                color: _reportStatus!['status'] == 'appealed'
+                                    ? const Color(0xFF60A5FA)
+                                    : const Color(0xFFF87171),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _reportStatus!['status'] == 'appealed'
+                                      ? 'ผลงานนี้อยู่ระหว่างการยื่นอุทธรณ์'
+                                      : '⚠️ ผลงานได้รับการรายงานถึงเกณฑ์ (10 ครั้ง)',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: _reportStatus!['status'] == 'appealed'
+                                        ? const Color(0xFF93C5FD)
+                                        : const Color(0xFFFCA5A5),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _reportStatus!['status'] == 'appealed'
+                                ? 'ท่านได้ยื่นคำอุทธรณ์เรียบร้อยแล้ว ระบบได้ระงับการลบอัตโนมัติชั่วคราวเพื่อรอการตรวจสอบจากทีมงาน'
+                                : 'ผลงานเรื่องนี้ได้รับการรายงานจากผู้อ่านครบ 10 ครั้ง กรุณาตรวจสอบเนื้อหา หรือยื่นอุทธรณ์ชี้แจงภายใน 3 วัน มิฉะนั้นระบบจะทำการลบนิยายเรื่องนี้โดยอัตโนมัติ',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                          ),
+                          if (isAuthor && _reportStatus!['status'] == 'threshold_reached') ...[
+                            const SizedBox(height: 10),
+                            ElevatedButton.icon(
+                              onPressed: () => _showAppealDialog(novel!),
+                              icon: const Icon(Icons.gavel_rounded, size: 16),
+                              label: const Text('ยื่นอุทธรณ์ / ขอรับการตรวจสอบ'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.secondary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                   const SizedBox(height: 20),

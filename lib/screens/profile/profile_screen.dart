@@ -550,15 +550,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ListTile(
                       leading: const Icon(Icons.forum_outlined, color: Color(0xFF5865F2)),
                       title: const Text('เข้าร่วม Discord Rels Reading Community', style: TextStyle(fontSize: 14)),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
-                      onTap: () => launchUrlString('https://discord.gg/relsreading'),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5865F2).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'เร็วๆ นี้',
+                          style: TextStyle(color: Color(0xFF5865F2), fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('ช่องทาง Discord ยังไม่เปิดให้บริการ จะเปิดให้บริการเร็วๆ นี้ครับ'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
                     ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.language_rounded, color: Color(0xFF1877F2)),
                       title: const Text('เข้าร่วม Facebook Community', style: TextStyle(fontSize: 14)),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
-                      onTap: () => launchUrlString('https://facebook.com/relsreading'),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1877F2).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'เร็วๆ นี้',
+                          style: TextStyle(color: Color(0xFF1877F2), fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('ช่องทาง Facebook ยังไม่เปิดให้บริการ จะเปิดให้บริการเร็วๆ นี้ครับ'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

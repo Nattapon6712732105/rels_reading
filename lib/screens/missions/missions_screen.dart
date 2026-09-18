@@ -149,9 +149,16 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => launchUrlString('https://discord.gg/relsreading'),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('ช่องทาง Discord ยังไม่เปิดให้บริการ จะเปิดให้บริการเร็วๆ นี้ครับ'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
                           icon: const Icon(Icons.forum_rounded, size: 16, color: Colors.white),
-                          label: const Text('Discord', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          label: const Text('Discord (เร็วๆ นี้)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF5865F2),
                             padding: const EdgeInsets.symmetric(vertical: 10),
