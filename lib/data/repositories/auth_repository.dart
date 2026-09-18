@@ -94,6 +94,57 @@ class AuthRepository {
     }
   }
 
+  /// Sign in with LINE (Authorization code, Token, or Profile)
+  Future<AuthResponse> loginWithLine({
+    String? code,
+    String? redirectUri,
+    String? accessToken,
+    String? idToken,
+    String? lineUserId,
+    String? displayName,
+    String? pictureUrl,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (code != null && code.isNotEmpty) payload['code'] = code.trim();
+      if (redirectUri != null && redirectUri.isNotEmpty) payload['redirectUri'] = redirectUri.trim();
+      if (accessToken != null && accessToken.isNotEmpty) payload['accessToken'] = accessToken.trim();
+      if (idToken != null && idToken.isNotEmpty) payload['idToken'] = idToken.trim();
+      if (lineUserId != null && lineUserId.isNotEmpty) payload['lineUserId'] = lineUserId.trim();
+      if (displayName != null && displayName.isNotEmpty) payload['displayName'] = displayName.trim();
+      if (pictureUrl != null && pictureUrl.isNotEmpty) payload['pictureUrl'] = pictureUrl.trim();
+
+      final res = await ApiClient.dio.post(
+        '/auth/line',
+        data: payload,
+      );
+
+      if (res.data['success'] == true) {
+        return AuthResponse.fromJson(res.data['data'] as Map<String, dynamic>);
+      }
+      throw Exception(res.data['message'] ?? 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ');
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message ?? 'เกิดข้อผิดพลาดในการเชื่อมต่อ LINE';
+      throw Exception(msg);
+    }
+  }
+
+  /// Get LINE Login Authorization URL
+  Future<String> getLineLoginUrl({String? redirectUri}) async {
+    try {
+      final res = await ApiClient.dio.get(
+        '/auth/line/url',
+        queryParameters: redirectUri != null ? {'redirectUri': redirectUri} : null,
+      );
+      if (res.data['success'] == true && res.data['data']?['url'] != null) {
+        return res.data['data']['url'] as String;
+      }
+      throw Exception('ไม่สามารถดึง URL เข้าสู่ระบบด้วย LINE ได้');
+    } catch (e) {
+      throw Exception('ไม่สามารถเชื่อมต่อระบบ LINE Login: ');
+    }
+  }
+
   Future<User> getProfile() async {
     try {
       final res = await ApiClient.dio.get('/user/profile');

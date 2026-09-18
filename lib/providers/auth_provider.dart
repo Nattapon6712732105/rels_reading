@@ -169,6 +169,57 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Login with LINE
+  Future<bool> loginWithLine({
+    String? code,
+    String? redirectUri,
+    String? accessToken,
+    String? idToken,
+    String? lineUserId,
+    String? displayName,
+    String? pictureUrl,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final res = await _repo.loginWithLine(
+        code: code,
+        redirectUri: redirectUri,
+        accessToken: accessToken,
+        idToken: idToken,
+        lineUserId: lineUserId,
+        displayName: displayName,
+        pictureUrl: pictureUrl,
+      );
+      await TokenStorage.saveTokens(
+        accessToken: res.tokens.accessToken,
+        refreshToken: res.tokens.refreshToken,
+      );
+      _user = res.user;
+      _isLineLinked = res.user.isLineLinked;
+      _lineUserId = res.user.lineUserId;
+      await TokenStorage.saveUser(res.user);
+
+      await fetchLineStatus();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get LINE Login authorization URL
+  Future<String> getLineLoginUrl({String? redirectUri}) async {
+    return await _repo.getLineLoginUrl(redirectUri: redirectUri);
+  }
+
   /// Fetch LINE linking status from backend
   Future<void> fetchLineStatus() async {
     try {

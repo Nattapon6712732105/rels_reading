@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_logo.dart';
@@ -32,6 +33,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _checkInitialConsent();
     if (kIsWeb) {
+      final uri = Uri.base;
+      if (uri.queryParameters.containsKey('code')) {
+        final code = uri.queryParameters['code'];
+        if (code != null && code.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _handleLineCallback(code);
+          });
+        }
+      }
+
       _authEventsSubscription = GoogleSignIn.instance.authenticationEvents.listen(
         (event) async {
           if (event is GoogleSignInAuthenticationEventSignIn) {
@@ -313,6 +324,106 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _handleLineCallback(String code) async {
+    final consentOk = await _ensureConsent();
+    if (!consentOk || !mounted) return;
+
+    final auth = context.read<AuthProvider>();
+    final redirectUri = '${Uri.base.origin}/auth/line/callback';
+    final ok = await auth.loginWithLine(code: code, redirectUri: redirectUri);
+
+    if (ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับ ${auth.user?.username ?? ""}'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+      Navigator.pop(context);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleLineLogin() async {
+    final consentOk = await _ensureConsent();
+    if (!consentOk || !mounted) return;
+
+    final auth = context.read<AuthProvider>();
+    try {
+      final redirectUri = kIsWeb
+          ? '${Uri.base.origin}/auth/line/callback'
+          : 'https://rels-reading.vercel.app/auth/line/callback';
+
+      final url = await auth.getLineLoginUrl(redirectUri: redirectUri);
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, webOnlyWindowName: kIsWeb ? '_self' : '_blank');
+      } else {
+        throw Exception('ไม่สามารถเปิดหน้า LINE Login ได้');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildLineSignInButton(AuthProvider auth) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: auth.isLoading ? null : _handleLineLogin,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF06C755),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.chat_bubble_rounded,
+                color: Color(0xFF06C755),
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'เข้าสู่ระบบด้วย LINE',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleDemoLogin() async {
     final consentOk = await _ensureConsent();
     if (!consentOk || !mounted) return;
@@ -562,6 +673,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     onNonWebPressed: _showManualGoogleLoginDialog,
                     isLoading: auth.isLoading,
                   ),
+                  const SizedBox(height: 12),
+
+                  // LINE Sign In Button
+                  _buildLineSignInButton(auth),
                   const SizedBox(height: 12),
 
                   // Demo User Button
