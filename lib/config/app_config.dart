@@ -16,9 +16,7 @@ class AppConfig {
       }
       return remoteBaseUrl;
     }
-    if (kDebugMode) {
-      return localBaseUrl;
-    }
+    // On Mobile / APK: Always connect to remote Vercel backend
     return remoteBaseUrl;
   }
 
