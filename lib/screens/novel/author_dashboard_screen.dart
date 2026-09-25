@@ -458,6 +458,7 @@ class _AuthorDashboardScreenState extends State<AuthorDashboardScreen> {
                         ? Image.network(
                             novel.coverUrl,
                             fit: BoxFit.cover,
+                            cacheWidth: 160,
                             errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white54),
                           )
                         : const Icon(Icons.book, color: Colors.white54),

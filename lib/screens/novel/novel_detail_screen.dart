@@ -742,6 +742,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                     Image.network(
                       novel!.coverUrl,
                       fit: BoxFit.cover,
+                      cacheWidth: 600,
                       errorBuilder: (_, __, ___) => _buildPlaceholderBg(),
                     )
                   else

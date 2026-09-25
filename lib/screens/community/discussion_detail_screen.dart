@@ -129,12 +129,21 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   String _formatTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'เมื่อสักครู่';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} นาทีที่แล้ว';
-    if (diff.inHours < 24) return '${diff.inHours} ชั่วโมงที่แล้ว';
-    if (diff.inDays < 7) return '${diff.inDays} วันที่แล้ว';
-    return DateFormat('d MMM yyyy', 'th').format(dt);
+    try {
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return 'เมื่อสักครู่';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} นาทีที่แล้ว';
+      if (diff.inHours < 24) return '${diff.inHours} ชั่วโมงที่แล้ว';
+      if (diff.inDays < 7) return '${diff.inDays} วันที่แล้ว';
+      return DateFormat('d MMM yyyy', 'th').format(dt);
+    } catch (_) {
+      const thaiMonths = [
+        '', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+        'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+      ];
+      final m = (dt.month >= 1 && dt.month <= 12) ? thaiMonths[dt.month] : '${dt.month}';
+      return '${dt.day} $m ${dt.year + 543}';
+    }
   }
 
   @override

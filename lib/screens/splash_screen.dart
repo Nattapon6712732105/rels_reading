@@ -60,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       authProvider.init(),
       novelProvider.fetchNovels(),
       bookmarkProvider.fetchBookmarks(),
-      Future.delayed(const Duration(milliseconds: 1400)), // Smooth transition delay
+      Future.delayed(const Duration(milliseconds: 400)), // Snappy transition delay
     ]);
 
     if (!mounted) return;

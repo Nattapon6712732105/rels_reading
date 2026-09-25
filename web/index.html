@@ -46,6 +46,11 @@
   <title>Rel's Reading - Explore Magical Worlds</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Preconnect & Preload Fonts for smooth, instant text rendering -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     body {
       background-color: #0E0F14;
@@ -56,15 +61,22 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     #loading-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 99999;
+      background-color: #0E0F14;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 20px;
-      transition: opacity 0.4s ease-out;
+      transition: opacity 0.3s ease-out;
     }
     #loading-splash img {
       width: 100px;
@@ -107,6 +119,21 @@
     <img src="favicon.png" alt="Rel's Reading Logo" />
     <div class="loading-bar"></div>
   </div>
+  <script>
+    // Remove splash screen cleanly as soon as Flutter renders the first frame to avoid background animation overhead
+    function removeSplash() {
+      var splash = document.getElementById('loading-splash');
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(function () {
+          if (splash.parentNode) splash.parentNode.removeChild(splash);
+        }, 300);
+      }
+    }
+    window.addEventListener('flutter-first-frame', removeSplash);
+    // Fallback if event is missed
+    setTimeout(removeSplash, 4500);
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

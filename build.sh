@@ -18,7 +18,7 @@ flutter config --enable-web
 echo "Resolving dependencies..."
 flutter pub get
 
-echo "Building Flutter Web release..."
-flutter build web --release
+echo "Building Flutter Web release (optimized with local CDN and -O4)..."
+flutter build web --release --no-web-resources-cdn -O4
 
 echo "Build complete! Output in build/web"

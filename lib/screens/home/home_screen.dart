@@ -31,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _startHeroTimer() {
     _heroTimer?.cancel();
     _heroTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
+      if (!mounted || !_heroController.hasClients) return;
       final novelProvider = context.read<NovelProvider>();
       final heroNovels = _getHeroNovels(novelProvider.allNovels);
       if (heroNovels.isEmpty) return;

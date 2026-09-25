@@ -283,6 +283,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                         ? Image.network(
                             novel.coverUrl,
                             fit: BoxFit.cover,
+                            cacheWidth: 300,
                             errorBuilder: (_, __, ___) => _buildPlaceholder(),
                           )
                         : _buildPlaceholder(),
@@ -449,6 +450,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                           ? Image.network(
                               novel.coverUrl,
                               fit: BoxFit.cover,
+                              cacheWidth: 150,
                               errorBuilder: (_, __, ___) => _buildPlaceholder(),
                             )
                           : _buildPlaceholder(),

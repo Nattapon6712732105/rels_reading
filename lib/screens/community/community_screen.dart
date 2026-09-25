@@ -381,12 +381,21 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   String _formatTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'เมื่อสักครู่';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} นาทีที่แล้ว';
-    if (diff.inHours < 24) return '${diff.inHours} ชั่วโมงที่แล้ว';
-    if (diff.inDays < 7) return '${diff.inDays} วันที่แล้ว';
-    return DateFormat('d MMM', 'th').format(dt);
+    try {
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return 'เมื่อสักครู่';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} นาทีที่แล้ว';
+      if (diff.inHours < 24) return '${diff.inHours} ชั่วโมงที่แล้ว';
+      if (diff.inDays < 7) return '${diff.inDays} วันที่แล้ว';
+      return DateFormat('d MMM', 'th').format(dt);
+    } catch (_) {
+      const thaiMonths = [
+        '', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+        'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+      ];
+      final m = (dt.month >= 1 && dt.month <= 12) ? thaiMonths[dt.month] : '${dt.month}';
+      return '${dt.day} $m';
+    }
   }
 
   @override
@@ -763,6 +772,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                     width: 48,
                     height: 64,
                     fit: BoxFit.cover,
+                    cacheWidth: 120,
                     errorBuilder: (_, __, ___) => Container(
                       width: 48,
                       height: 64,
@@ -1041,14 +1051,16 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                     ),
                     const SizedBox(height: 6),
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           'โดย ${topic.author}',
                           style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                         ),
-                        if (topic.isAuthor) ...[
-                          const SizedBox(width: 4),
+                        if (topic.isAuthor)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
@@ -1060,19 +1072,15 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                               style: TextStyle(color: Colors.purpleAccent, fontSize: 9, fontWeight: FontWeight.bold),
                             ),
                           ),
-                        ],
-                        const SizedBox(width: 6),
                         const Text('•', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
-                        const SizedBox(width: 6),
                         Text(
                           '${topic.repliesCount} ความคิดเห็น',
                           style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                         ),
                         if (topic.likesCount > 0) ...[
-                          const SizedBox(width: 6),
                           const Text('•', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
-                          const SizedBox(width: 6),
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 topic.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
