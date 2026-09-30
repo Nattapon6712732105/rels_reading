@@ -3,7 +3,7 @@
   "outputDirectory": "build/web",
   "headers": [
     {
-      "source": "/(.*)\\.(js|wasm|css|png|jpg|jpeg|gif|ico|woff|woff2|ttf)",
+      "source": "/(.*)\\.(wasm|css|png|jpg|jpeg|gif|ico|woff|woff2|ttf)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -12,7 +12,7 @@
       ]
     },
     {
-      "source": "/(index.html|version.json|flutter_service_worker.js|manifest.json)",
+      "source": "/(.*)\\.(js|json|html)",
       "headers": [
         {
           "key": "Cache-Control",
