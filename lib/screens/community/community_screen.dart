@@ -242,11 +242,17 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
 
   void _showLineConnectDialog(BuildContext context) {
     final auth = context.read<AuthProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: const Color(0xFF161722),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        backgroundColor: isDark ? const Color(0xFF161722) : Colors.white,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
           child: Padding(
@@ -265,23 +271,34 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                       child: const Icon(Icons.notifications_active_rounded, color: Color(0xFF06C755), size: 22),
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'รับแจ้งเตือนผ่าน LINE OA',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
                           ),
                           Text(
                             'สแกนเพียง 1 ครั้งต่อผู้ใช้',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF94A3B8)),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      ),
                       onPressed: () => Navigator.pop(ctx),
                       splashRadius: 18,
                     ),
@@ -321,10 +338,13 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                 ),
                 const SizedBox(height: 14),
 
-                const Text(
+                Text(
                   'แจ้งเตือนตอนใหม่จะส่งเข้า LINE โดยตรง ไม่รบกวนหน้าเว็บ',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 18),
 
@@ -364,11 +384,23 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                       }
                     }
                   },
-                  icon: const Icon(Icons.sync_rounded, size: 16, color: Color(0xFF94A3B8)),
-                  label: const Text('ตรวจสอบสถานะ', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  icon: Icon(
+                    Icons.sync_rounded,
+                    size: 16,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  ),
+                  label: Text(
+                    'ตรวจสอบสถานะ',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 13,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(40),
-                    side: const BorderSide(color: Color(0xFF2E3147)),
+                    side: BorderSide(
+                      color: isDark ? const Color(0xFF2E3147) : const Color(0xFFCBD5E1),
+                    ),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
@@ -401,14 +433,18 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final int unreadCount = _notifications.where((n) => !n.isRead).length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E0F14),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0E0F14),
-        title: const Text(
+        automaticallyImplyLeading: false,
+        title: Text(
           'การแจ้งเตือนและคอมมูนิตี้',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
         ),
         actions: [
           if (_tabController.index == 1)
@@ -425,7 +461,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
           controller: _tabController,
           indicatorColor: AppTheme.primary,
           indicatorWeight: 3,
-          labelColor: Colors.white,
+          labelColor: isDark ? Colors.white : const Color(0xFF0F172A),
           unselectedLabelColor: const Color(0xFF64748B),
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           tabs: [
@@ -480,6 +516,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
 
   Widget _buildNotificationsTab() {
     final auth = context.watch<AuthProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bool isLinked = auth.isLineLinked;
 
     // Filter notifications
@@ -555,13 +592,26 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0F3A22), Color(0xFF161822)],
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? const [Color(0xFF0F3A22), Color(0xFF161822)]
+                            : const [Color(0xFFE8FDF0), Color(0xFFF0FDF4)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF06C755).withOpacity(0.4)),
+                      border: Border.all(
+                        color: const Color(0xFF06C755).withOpacity(isDark ? 0.4 : 0.6),
+                      ),
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,14 +629,21 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'รับแจ้งเตือนผ่าน LINE OA',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
+                              Text(
                                 'สแกน 1 ครั้งเพื่อรับการแจ้งเตือนตอนใหม่ผ่านแชท LINE โดยตรง ไม่รบกวนหน้าเว็บ',
-                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                  fontSize: 12,
+                                ),
                               ),
                               const SizedBox(height: 10),
                               ElevatedButton.icon(
@@ -605,7 +662,11 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF94A3B8)),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          ),
                           tooltip: 'ซ่อนการแจ้งเตือนนี้',
                           onPressed: _dismissBanner,
                           splashRadius: 18,
@@ -634,14 +695,18 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                                   setState(() => _selectedFilterIndex = i);
                                 },
                                 selectedColor: AppTheme.primary.withOpacity(0.2),
-                                backgroundColor: const Color(0xFF1B1C26),
+                                backgroundColor: isDark ? const Color(0xFF1B1C26) : Colors.white,
                                 labelStyle: TextStyle(
-                                  color: isSelected ? AppTheme.primary : const Color(0xFF94A3B8),
+                                  color: isSelected
+                                      ? (isDark ? AppTheme.primary : const Color(0xFF0284C7))
+                                      : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   fontSize: 13,
                                 ),
                                 side: BorderSide(
-                                  color: isSelected ? AppTheme.primary : const Color(0xFF27293A),
+                                  color: isSelected
+                                      ? (isDark ? AppTheme.primary : const Color(0xFF0284C7))
+                                      : (isDark ? const Color(0xFF27293A) : const Color(0xFFE2E8F0)),
                                 ),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               ),
@@ -680,9 +745,11 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                           Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1A1B24),
+                              color: isDark ? const Color(0xFF1A1B24) : const Color(0xFFF1F5F9),
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF2B2D3C)),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF2B2D3C) : const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: const Icon(
                               Icons.notifications_none_rounded,
@@ -691,14 +758,21 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                             ),
                           ),
                           const SizedBox(height: 18),
-                          const Text(
+                          Text(
                             'ไม่มีการแจ้งเตือนในหมวดนี้',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
                           ),
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             'การแจ้งเตือนตอนใหม่และข้อความจะปรากฏที่นี่',
-                            style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
@@ -724,6 +798,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   Widget _buildNotificationCard(AppNotification notif) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Color typeColor;
     String typeLabel;
     IconData typeIcon;
@@ -754,11 +829,24 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: notif.isRead ? const Color(0xFF151620) : const Color(0xFF181B28),
+            color: notif.isRead
+                ? (isDark ? const Color(0xFF151620) : Colors.white)
+                : (isDark ? const Color(0xFF181B28) : const Color(0xFFF1F5F9)),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: notif.isRead ? const Color(0xFF242636) : AppTheme.primary.withOpacity(0.35),
+              color: notif.isRead
+                  ? (isDark ? const Color(0xFF242636) : const Color(0xFFE2E8F0))
+                  : AppTheme.primary.withOpacity(0.4),
             ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -818,7 +906,10 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                         const SizedBox(width: 8),
                         Text(
                           _formatTime(notif.createdAt),
-                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            fontSize: 11,
+                          ),
                         ),
                         const Spacer(),
                         if (!notif.isRead)
@@ -836,7 +927,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                     Text(
                       notif.title,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontWeight: notif.isRead ? FontWeight.w600 : FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -844,7 +935,11 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                     const SizedBox(height: 4),
                     Text(
                       notif.message,
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, height: 1.4),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -861,6 +956,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   Widget _buildCommunityTab() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Filter topics by category
     List<DiscussionTopic> filteredTopics = _topics;
     if (_selectedCommunityCategoryIndex > 0) {
@@ -898,14 +994,18 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                                   setState(() => _selectedCommunityCategoryIndex = i);
                                 },
                                 selectedColor: AppTheme.primary.withOpacity(0.2),
-                                backgroundColor: const Color(0xFF1B1C26),
+                                backgroundColor: isDark ? const Color(0xFF1B1C26) : Colors.white,
                                 labelStyle: TextStyle(
-                                  color: isSelected ? AppTheme.primary : const Color(0xFF94A3B8),
+                                  color: isSelected
+                                      ? (isDark ? AppTheme.primary : const Color(0xFF0284C7))
+                                      : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   fontSize: 13,
                                 ),
                                 side: BorderSide(
-                                  color: isSelected ? AppTheme.primary : const Color(0xFF27293A),
+                                  color: isSelected
+                                      ? (isDark ? AppTheme.primary : const Color(0xFF0284C7))
+                                      : (isDark ? const Color(0xFF27293A) : const Color(0xFFE2E8F0)),
                                 ),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               ),
@@ -932,16 +1032,27 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                       padding: const EdgeInsets.only(top: 40),
                       child: Column(
                         children: [
-                          const Icon(Icons.forum_outlined, size: 48, color: Color(0xFF64748B)),
+                          Icon(
+                            Icons.forum_outlined,
+                            size: 48,
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                          ),
                           const SizedBox(height: 14),
-                          const Text(
+                          Text(
                             'ยังไม่มีกระทู้ในหมวดหมู่นี้',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             'เป็นคนแรกที่เปิดห้องพูดคุยในหมวดหมู่นี้ได้เลย!',
-                            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
@@ -978,6 +1089,8 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   Widget _buildTopicCard(DiscussionTopic topic) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -993,11 +1106,22 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF161722),
+            color: isDark ? const Color(0xFF161722) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: topic.isPinned ? AppTheme.primary.withOpacity(0.4) : const Color(0xFF262838),
+              color: topic.isPinned
+                  ? AppTheme.primary.withOpacity(0.5)
+                  : (isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0)),
             ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -1041,14 +1165,21 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                         const Spacer(),
                         Text(
                           _formatTime(topic.createdAt),
-                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
                       topic.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -1058,7 +1189,10 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                       children: [
                         Text(
                           'โดย ${topic.author}',
-                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            fontSize: 12,
+                          ),
                         ),
                         if (topic.isAuthor)
                           Container(

@@ -47,6 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('โปรไฟล์และการตั้งค่า'),
       ),
       body: SafeArea(

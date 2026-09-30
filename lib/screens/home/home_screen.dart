@@ -73,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
           slivers: [
             // ── Collapsible App Bar ──────────────────────────────────────
             SliverAppBar(
+              automaticallyImplyLeading: false,
               floating: true,
               snap: true,
               pinned: false,

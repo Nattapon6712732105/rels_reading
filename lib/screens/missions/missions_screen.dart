@@ -83,11 +83,18 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        automaticallyImplyLeading: false,
+        title: Text(
           'ภารกิจและกิจกรรม',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -95,19 +102,33 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'ติดตามการอ่าน ทำภารกิจรายวันเพื่อรักษาสตรีคของคุณ',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 16),
 
-            // Community Banner (Matching Screenshot 4)
+            // Community Banner
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF161722),
+                color: isDark ? const Color(0xFF161722) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF262838)),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+                ),
+                boxShadow: isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [
@@ -115,20 +136,27 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                     children: [
                       const Text('🎉', style: TextStyle(fontSize: 20)),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'เข้าร่วมคอมมูนิตี้ Rels Reading',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'ติดตามข่าวสาร อัปเดตนิยายใหม่ และกิจกรรมพิเศษมากมาย',
-                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -175,14 +203,19 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
 
             // Tab Buttons
             Container(
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFF262838), width: 1)),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+                    width: 1,
+                  ),
+                ),
               ),
               child: TabBar(
                 controller: _tabController,
                 indicatorColor: AppTheme.primary,
                 indicatorWeight: 3,
-                labelColor: Colors.white,
+                labelColor: isDark ? Colors.white : const Color(0xFF0F172A),
                 unselectedLabelColor: const Color(0xFF64748B),
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 tabs: const [
@@ -193,7 +226,7 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
             ),
             const SizedBox(height: 20),
 
-            // 3 Streak Metric Cards (Matching Screenshot 4)
+            // 3 Streak Metric Cards
             Row(
               children: [
                 Expanded(
@@ -202,6 +235,7 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                     iconColor: const Color(0xFF38BDF8),
                     title: 'เช็คอินติดต่อกัน\nนานที่สุด',
                     value: '$_maxStreak วัน',
+                    isDark: isDark,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -211,6 +245,7 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                     iconColor: const Color(0xFF34D399),
                     title: 'สถิติปัจจุบัน\n',
                     value: '$_currentStreak วัน',
+                    isDark: isDark,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -220,19 +255,31 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                     iconColor: const Color(0xFFF97316),
                     title: 'สิทธิ์กู้คืนสตรีค\n',
                     value: '$_streakRecovery ครั้ง',
+                    isDark: isDark,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Daily Check-in Card (Matching Screenshot 4)
+            // Daily Check-in Card
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xFF161722),
+                color: isDark ? const Color(0xFF161722) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF262838)),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+                ),
+                boxShadow: isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,15 +289,26 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                     children: [
                       Text(
                         '${_getMonthName(DateTime.now().month)} ${DateTime.now().year + 543}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
                       ),
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.schedule_rounded, size: 14, color: Color(0xFF64748B)),
-                          SizedBox(width: 4),
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 14,
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(width: 4),
                           Text(
                             'รีเซ็ต 00:00 น.',
-                            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -266,22 +324,34 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                       final isChecked = i < (_currentStreak % 7 == 0 && _currentStreak > 0 ? 7 : _currentStreak % 7);
                       return Column(
                         children: [
-                          Text('วันที่ $dayNum', style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+                          Text(
+                            'วันที่ $dayNum',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                              fontSize: 11,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Container(
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: isChecked ? AppTheme.primary : const Color(0xFF222432),
+                              color: isChecked
+                                  ? AppTheme.primary
+                                  : (isDark ? const Color(0xFF222432) : const Color(0xFFF1F5F9)),
                               border: Border.all(
-                                color: isChecked ? AppTheme.primary : const Color(0xFF33364A),
+                                color: isChecked
+                                    ? AppTheme.primary
+                                    : (isDark ? const Color(0xFF33364A) : const Color(0xFFE2E8F0)),
                               ),
                             ),
                             child: Icon(
                               isChecked ? Icons.check_rounded : Icons.local_fire_department_rounded,
                               size: 18,
-                              color: isChecked ? Colors.white : const Color(0xFF64748B),
+                              color: isChecked
+                                  ? AppTheme.onPrimary
+                                  : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
                             ),
                           ),
                         ],
@@ -298,7 +368,7 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                       onPressed: _hasCheckedInToday ? null : _handleCheckIn,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primary,
-                        disabledBackgroundColor: const Color(0xFF252838),
+                        disabledBackgroundColor: isDark ? const Color(0xFF252838) : const Color(0xFFE2E8F0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: Text(
@@ -306,7 +376,9 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: _hasCheckedInToday ? const Color(0xFF64748B) : AppTheme.onPrimary,
+                          color: _hasCheckedInToday
+                              ? (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))
+                              : AppTheme.onPrimary,
                         ),
                       ),
                     ),
@@ -325,13 +397,25 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
     required Color iconColor,
     required String title,
     required String value,
+    required bool isDark,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF161722),
+        color: isDark ? const Color(0xFF161722) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF262838)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,12 +431,20 @@ class _MissionsScreenState extends State<MissionsScreen> with SingleTickerProvid
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, height: 1.2),
+            style: TextStyle(
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              fontSize: 11,
+              height: 1.2,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
           ),
         ],
       ),

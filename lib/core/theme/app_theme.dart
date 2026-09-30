@@ -117,6 +117,21 @@ class AppTheme {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       ),
+      dividerColor: const Color(0xFF252733),
+      tabBarTheme: const TabBarThemeData(
+        indicatorColor: primary,
+        labelColor: Colors.white,
+        unselectedLabelColor: Color(0xFF64748B),
+        labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        unselectedLabelStyle: TextStyle(fontSize: 14),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: const Color(0xFF161722),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFF262838), width: 1),
+        ),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
@@ -212,6 +227,21 @@ class AppTheme {
           borderSide: const BorderSide(color: primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      ),
+      dividerColor: const Color(0xFFE2E8F0),
+      tabBarTheme: const TabBarThemeData(
+        indicatorColor: primary,
+        labelColor: Color(0xFF0F172A),
+        unselectedLabelColor: Color(0xFF64748B),
+        labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        unselectedLabelStyle: TextStyle(fontSize: 14),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

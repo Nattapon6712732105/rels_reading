@@ -150,15 +150,17 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E0F14),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF13141D),
-        elevation: 0,
-        title: const Text(
+        title: Text(
           'ห้องพูดคุยนักอ่าน',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
         ),
         actions: [
           IconButton(
@@ -206,10 +208,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                           const SizedBox(width: 10),
                           Text(
                             'ความคิดเห็น (${_topic.replies.length})',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                             ),
                           ),
                         ],
@@ -222,17 +224,31 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                           padding: const EdgeInsets.all(28),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF161722),
+                            color: isDark ? const Color(0xFF161722) : Colors.white,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFF262838)),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+                            ),
+                            boxShadow: isDark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.03),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                           ),
-                          child: const Column(
+                          child: Column(
                             children: [
-                              Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Color(0xFF64748B)),
-                              SizedBox(height: 8),
+                              const Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Color(0xFF64748B)),
+                              const SizedBox(height: 8),
                               Text(
                                 'ยังไม่มีความคิดเห็น เป็นคนแรกที่เริ่มพูดคุยเลย!',
-                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                                style: TextStyle(
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
@@ -264,15 +280,19 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   Widget _buildMainTopicCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF161722),
+        color: isDark ? const Color(0xFF161722) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF282B3E)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF282B3E) : const Color(0xFFE2E8F0),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -320,7 +340,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
               const Spacer(),
               Text(
                 _formatTime(_topic.createdAt),
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -329,10 +352,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
           // Title
           Text(
             _topic.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
               height: 1.35,
             ),
           ),
@@ -362,8 +385,8 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                     children: [
                       Text(
                         _topic.author,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -385,9 +408,12 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                       ],
                     ],
                   ),
-                  const Text(
+                  Text(
                     'ผู้สร้างกระทู้',
-                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -396,16 +422,19 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
           const SizedBox(height: 16),
 
           // Divider
-          const Divider(color: Color(0xFF262838), height: 1),
+          Divider(
+            color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+            height: 1,
+          ),
           const SizedBox(height: 16),
 
           // Content Body
           SelectableText(
             _topic.content,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               height: 1.65,
-              color: Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
             ),
           ),
           const SizedBox(height: 20),
@@ -420,10 +449,14 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: _topic.isLiked ? Colors.redAccent.withOpacity(0.15) : const Color(0xFF1E202C),
+                    color: _topic.isLiked
+                        ? Colors.redAccent.withOpacity(0.15)
+                        : (isDark ? const Color(0xFF1E202C) : const Color(0xFFF1F5F9)),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: _topic.isLiked ? Colors.redAccent.withOpacity(0.4) : const Color(0xFF2F3244),
+                      color: _topic.isLiked
+                          ? Colors.redAccent.withOpacity(0.4)
+                          : (isDark ? const Color(0xFF2F3244) : const Color(0xFFE2E8F0)),
                     ),
                   ),
                   child: Row(
@@ -437,7 +470,9 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                       Text(
                         '${_topic.likesCount}',
                         style: TextStyle(
-                          color: _topic.isLiked ? Colors.redAccent : const Color(0xFF94A3B8),
+                          color: _topic.isLiked
+                              ? Colors.redAccent
+                              : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -452,17 +487,26 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E202C),
+                  color: isDark ? const Color(0xFF1E202C) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF2F3244)),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF2F3244) : const Color(0xFFE2E8F0),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF94A3B8), size: 16),
+                    Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      size: 16,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       '${_topic.replies.length} ความคิดเห็น',
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -488,12 +532,25 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   Widget _buildReplyCard(DiscussionReply reply) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF151620),
+        color: isDark ? const Color(0xFF151620) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF232535)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF232535) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,10 +577,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                   children: [
                     Text(
                       reply.author,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     if (reply.isAuthor) ...[
@@ -545,7 +602,10 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
               ),
               Text(
                 _formatTime(reply.createdAt),
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
@@ -554,7 +614,11 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
           // Content
           SelectableText(
             reply.content,
-            style: const TextStyle(fontSize: 14, height: 1.5, color: Color(0xFFCBD5E1)),
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+            ),
           ),
           const SizedBox(height: 8),
 
@@ -572,7 +636,9 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                     Icon(
                       reply.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                       size: 14,
-                      color: reply.isLiked ? Colors.redAccent : const Color(0xFF64748B),
+                      color: reply.isLiked
+                          ? Colors.redAccent
+                          : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
                     ),
                     if (reply.likesCount > 0) ...[
                       const SizedBox(width: 4),
@@ -580,7 +646,9 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                         '${reply.likesCount}',
                         style: TextStyle(
                           fontSize: 11,
-                          color: reply.isLiked ? Colors.redAccent : const Color(0xFF64748B),
+                          color: reply.isLiked
+                              ? Colors.redAccent
+                              : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -596,14 +664,20 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
   }
 
   Widget _buildReplyInputBar(dynamic user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF13141D),
-        border: const Border(top: BorderSide(color: Color(0xFF262838))),
+        color: isDark ? const Color(0xFF13141D) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF262838) : const Color(0xFFE2E8F0),
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -634,20 +708,27 @@ class _DiscussionDetailScreenState extends State<DiscussionDetailScreen> {
                     controller: _replyController,
                     minLines: 1,
                     maxLines: 4,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 14,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'แสดงความคิดเห็นในกระทู้นี้...',
                       hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                       filled: true,
-                      fillColor: const Color(0xFF1E202C),
+                      fillColor: isDark ? const Color(0xFF1E202C) : const Color(0xFFF1F5F9),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: Color(0xFF2E3144)),
+                        borderSide: BorderSide(
+                          color: isDark ? const Color(0xFF2E3144) : const Color(0xFFCBD5E1),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: Color(0xFF2E3144)),
+                        borderSide: BorderSide(
+                          color: isDark ? const Color(0xFF2E3144) : const Color(0xFFCBD5E1),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),

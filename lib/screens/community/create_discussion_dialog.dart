@@ -86,9 +86,11 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: const Color(0xFF161722),
+      backgroundColor: isDark ? const Color(0xFF161722) : Colors.white,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520),
         child: Padding(
@@ -112,7 +114,7 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
                         child: const Icon(Icons.edit_note_rounded, color: AppTheme.primary, size: 22),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -121,18 +123,25 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                               ),
                             ),
                             Text(
                               'ร่วมแบ่งปัน แลกเปลี่ยน หรือพูดคุยกับเพื่อนนักอ่าน',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF94A3B8)),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        ),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
@@ -140,9 +149,13 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
                   const SizedBox(height: 18),
 
                   // Category Selection Chips
-                  const Text(
+                  Text(
                     'เลือกหมวดหมู่กระทู้',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -157,14 +170,14 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
                           setState(() => _selectedCategory = cat);
                         },
                         selectedColor: AppTheme.primary.withOpacity(0.2),
-                        backgroundColor: const Color(0xFF1E202C),
+                        backgroundColor: isDark ? const Color(0xFF1E202C) : const Color(0xFFF1F5F9),
                         labelStyle: TextStyle(
-                          color: isSelected ? AppTheme.primary : const Color(0xFF94A3B8),
+                          color: isSelected ? AppTheme.primary : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           fontSize: 12,
                         ),
                         side: BorderSide(
-                          color: isSelected ? AppTheme.primary : const Color(0xFF2C2F42),
+                          color: isSelected ? AppTheme.primary : (isDark ? const Color(0xFF2C2F42) : const Color(0xFFE2E8F0)),
                         ),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       );
@@ -173,26 +186,36 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
                   const SizedBox(height: 18),
 
                   // Topic Title Input
-                  const Text(
+                  Text(
                     'หัวข้อกระทู้',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _titleController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 14,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'เช่น ห้องพูดคุย: ความรู้สึกหลังอ่านตอนล่าสุด...',
-                      hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                      hintStyle: TextStyle(
+                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                        fontSize: 13,
+                      ),
                       filled: true,
-                      fillColor: const Color(0xFF1B1C27),
+                      fillColor: isDark ? const Color(0xFF1B1C27) : const Color(0xFFF8FAFC),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF2B2E40)),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFF2B2E40) : const Color(0xFFE2E8F0)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF2B2E40)),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFF2B2E40) : const Color(0xFFE2E8F0)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -208,28 +231,38 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
                   const SizedBox(height: 18),
 
                   // Content Input
-                  const Text(
+                  Text(
                     'เนื้อหา',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _contentController,
                     minLines: 4,
                     maxLines: 8,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 14,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'เขียนรายละเอียดของกระทู้ หรือเปิดประเด็นชวนคุย...',
-                      hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                      hintStyle: TextStyle(
+                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                        fontSize: 13,
+                      ),
                       filled: true,
-                      fillColor: const Color(0xFF1B1C27),
+                      fillColor: isDark ? const Color(0xFF1B1C27) : const Color(0xFFF8FAFC),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF2B2E40)),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFF2B2E40) : const Color(0xFFE2E8F0)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF2B2E40)),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFF2B2E40) : const Color(0xFFE2E8F0)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -252,10 +285,15 @@ class _CreateDiscussionDialogState extends State<CreateDiscussionDialog> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(44),
-                            side: const BorderSide(color: Color(0xFF2E3147)),
+                            side: BorderSide(color: isDark ? const Color(0xFF2E3147) : const Color(0xFFE2E8F0)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF94A3B8))),
+                          child: Text(
+                            'ยกเลิก',
+                            style: TextStyle(
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),

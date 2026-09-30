@@ -62,6 +62,7 @@ class _AuthorDashboardScreenState extends State<AuthorDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Row(
           children: [
             Icon(Icons.dashboard_customize_rounded, color: AppTheme.primary, size: 22),

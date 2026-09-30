@@ -135,6 +135,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('ชั้นหนังสือของฉัน'),
         actions: [
           if (bookmarks.isNotEmpty) ...[

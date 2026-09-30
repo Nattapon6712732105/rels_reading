@@ -38,6 +38,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final screens = [
       const HomeScreen(),
@@ -53,20 +54,21 @@ class _MainNavScreenState extends State<MainNavScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
-          backgroundColor: const Color(0xFF0E0F14),
+          automaticallyImplyLeading: false,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
           title: Row(
             children: [
               // Official App Logo
               const AppLogo(size: 32, showGlow: false, borderRadius: 8),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'RELS READING',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.8,
-                  color: Colors.white,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
             ],
@@ -77,7 +79,11 @@ class _MainNavScreenState extends State<MainNavScreen> {
               icon: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(Icons.notifications_none_rounded, size: 24, color: Colors.white),
+                  Icon(
+                    Icons.notifications_none_rounded,
+                    size: 24,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
                   Positioned(
                     top: -2,
                     right: -2,
@@ -128,13 +134,20 @@ class _MainNavScreenState extends State<MainNavScreen> {
         index: _currentIndex,
         children: screens,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _switchTab,
-        height: 68,
-        backgroundColor: const Color(0xFF121319),
-        indicatorColor: AppTheme.primary.withOpacity(0.18),
-        destinations: const [
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: isDark ? const Color(0xFF202330) : const Color(0xFFE2E8F0),
+              width: 1,
+            ),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _switchTab,
+          height: 68,
+          destinations: const [
           NavigationDestination(
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore_rounded, color: AppTheme.primary),
@@ -162,6 +175,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
